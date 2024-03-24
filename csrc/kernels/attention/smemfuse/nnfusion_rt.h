@@ -12,11 +12,6 @@
 #include <cuda_runtime.h>
 #include <sstream>
 #include "nnfusion_rt.h"
-#ifndef __HALF_COMPARE_EX__
-#define __HALF_COMPARE_EX__
-inline __device__ half hmax(half x, half y) { return x > y ? x : y; }
-inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
-#endif
 #include <stdint.h>
 
 
@@ -66,7 +61,7 @@ __device__ inline void update_r(Tensor0& r_new_fragment, Tensor1& r_wo_clamp_fra
   using namespace cute;
     // r_wo_clamp
     Tensor r_wo_clamp_fragment_tmp = make_fragment_like(r_wo_clamp_fragment);
-    reduce_sumabs(scores, r_wo_clamp_fragment_tmp);
+    reduce_sumabs<8>(scores, r_wo_clamp_fragment_tmp);
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
       r_wo_clamp_fragment(ax0) += r_wo_clamp_fragment_tmp(ax0);
@@ -408,7 +403,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
         scores(ax0,ax1) *= softmax_scale;
       }
     }
-    reduce_max<false>(scores, m_new_fragment);
+    reduce_max<8,false>(scores, m_new_fragment);
     // p = exp(qk-m_new)
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
@@ -419,7 +414,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     }
     // lse_new
     Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum(scores, scores_sum);
+    reduce_sum<8>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0; ax0<size(lse_new_fragment);ax0++){
       lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
@@ -518,7 +513,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
         scores(ax0,ax1) *= softmax_scale;
       }
     }
-    reduce_max<false>(scores, m_new_fragment);
+    reduce_max<8,false>(scores, m_new_fragment);
     // p = exp(qk-m_new)
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
@@ -529,7 +524,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     }
     // lse_new
     Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum(scores, scores_sum);
+    reduce_sum<8>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0; ax0<size(lse_new_fragment);ax0++){
       lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
