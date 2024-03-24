@@ -15,7 +15,6 @@
 #include <stdint.h>
 
 
-constexpr float softmax_scale = 1.250000e-01f;
 /*
 constexpr int Br = 64;
 constexpr int Bc = 64; //128
@@ -56,46 +55,10 @@ constexpr int Nthreads = 256;
 
 
 
-template<class Tensor0, class Tensor1, class Tensor2>
-__device__ inline void update_r(Tensor0& r_new_fragment, Tensor1& r_wo_clamp_fragment, Tensor2& scores){
-  using namespace cute;
-    // r_wo_clamp
-    Tensor r_wo_clamp_fragment_tmp = make_fragment_like(r_wo_clamp_fragment);
-    reduce_sumabs<8>(scores, r_wo_clamp_fragment_tmp);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
-      r_wo_clamp_fragment(ax0) += r_wo_clamp_fragment_tmp(ax0);
-    }
-    // r_new = max(r_wo_clamp, 1)
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
-      r_new_fragment(ax0) = max(r_wo_clamp_fragment(ax0), 1.0f);
-    }
-} 
-
-template<class SmemTiledCopy1, class STensor1, class RTensor1,class Tensor0, class Tensor1>
-__device__ inline void multiply_mask(SmemTiledCopy1 smem_tiled_copy_mask, STensor1& sMask_copypartition, RTensor1& rMask_copy_view, 
-                            Tensor0& acc_s_fragment, Tensor1& rMask){
-  using namespace cute;
-  // qk*m
-    cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,_0{}), rMask_copy_view(_,_,_0{}));
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<2>(acc_s_fragment);ax0++){
-      if(ax0 < size<2>(acc_s_fragment)-1){
-        cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,ax0+1), rMask_copy_view(_,_,ax0+1));
-      }
-      #pragma unroll
-      for(int ax1 = 0;ax1 < size<1>(acc_s_fragment);ax1++){
-        #pragma unroll
-        for(int ax2 = 0;ax2 < size<0>(acc_s_fragment);ax2++){
-          acc_s_fragment(ax2,ax1,ax0) = acc_s_fragment(ax2,ax1,ax0) * __half2float(rMask(ax2,ax1,ax0));
-        }
-      }
-    }
-}
 
 template<int Kd, int D, int Br, int Bc, int Nthreads, int BlockKSmem=Kd, int num_stages_qk=1,bool load_q_once=true, int BlockKSmem2=Bc, int num_stages_v=1, int SmemKAtom=64, int kSwizzle=3, int SmemKAtomV=64, int kSwizzleV=3, int SmemKAtomP=64, int kSwizzleP=3, int SmemKAtomPf16=64, int kSwizzlePf16=3, int warps_mma1_N=2, int warps_mma_N=4, bool unrollLastIter=true>
 __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
+  constexpr float softmax_scale = 1.250000e-01f;
 
     extern __shared__ char shared[];
 

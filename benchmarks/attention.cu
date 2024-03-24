@@ -10,21 +10,9 @@
 #include <iostream>
 #include <vector>
 
-// #include "kernels/attention/smemfuse/nnfusion_rt.h"
+#include "kernels/attention/smemfuse/nnfusion_rt.h"
 #include "kernels/attention/regfuse/nnfusion_rt.h"
-#define CUDA_SAFE_CALL(x)                                                                          \
-    do                                                                                             \
-    {                                                                                              \
-        cudaError_t result = (x);                                                                  \
-        if (result != cudaSuccess)                                                                 \
-        {                                                                                          \
-            const char* msg = cudaGetErrorString(result);                                          \
-            std::stringstream safe_call_ss;                                                        \
-            safe_call_ss << "\nerror: " #x " failed with error"                                    \
-                         << "\nfile: " << __FILE__ << "\nline: " << __LINE__ << "\nmsg: " << msg;  \
-            throw std::runtime_error(safe_call_ss.str());                                          \
-        }                                                                                          \
-    } while (0)
+
 /*
 constexpr int Br = {Br};
 constexpr int Bc = {Bc};
@@ -57,8 +45,10 @@ public:
     int B,H,Seq_q,Seq_k;
 };
 
-template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, int SmemKAtom_=64, bool unrollLastIter_=true, 
-/*smem_fuse only*/int SmemKAtomV_ = 64, int warps_mma1_N_ = 1, int warps_mma_N_ = 1>
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+/*smem_fuse only*/ int warps_mma1_N_ = 1, int warps_mma_N_ = 1, 
+int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, int SmemKAtom_=64, bool unrollLastIter_=true, 
+/*smem_fuse only*/int SmemKAtomV_ = 64>
 class ImplementShape{
 public:
     constexpr static int Br = Br_;
@@ -200,7 +190,7 @@ float test_regfuse_attention(ProblemShape shape){
     return ms / repeats;
 
 }
-/*
+
 template <typename InplementConfig>
 float test_smemfuse_attention(ProblemShape shape){
     constexpr int br = InplementConfig::Br;
@@ -271,7 +261,7 @@ float test_smemfuse_attention(ProblemShape shape){
     if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
     if(cudaGetLastError() != cudaSuccess) {
-        printf("CUDA error: %s\\n", cudaGetErrorString(cudaGetLastError()));
+        printf("CUDA error: %s\n", cudaGetErrorString(cudaGetLastError()));
         return -1;
     }
     cudaEventElapsedTime(&ms, start, stop);
@@ -295,7 +285,7 @@ float test_smemfuse_attention(ProblemShape shape){
     }
     if(cudaEventSynchronize(stop_[repeats-1]) != cudaSuccess) return -1;
     if(cudaGetLastError() != cudaSuccess) {
-        printf("CUDA error: %s\\n", cudaGetErrorString(cudaGetLastError()));
+        printf("CUDA error: %s\n", cudaGetErrorString(cudaGetLastError()));
         return -1;
     }
     ms = 0;
@@ -313,11 +303,15 @@ float test_smemfuse_attention(ProblemShape shape){
     return ms / repeats;
 
 }
-*/
+
 int main(){
     ProblemShape PS(4,8,2048,2048);
     using InpleConfig = ImplementShape<128,64,256,256,256>;
     float ms = test_regfuse_attention<InpleConfig>(PS);
+    std::cout << "Time: " << ms << "ms" << std::endl;
+
+
+    ms = test_smemfuse_attention<ImplementShape<64,64,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
     return 0;
 }

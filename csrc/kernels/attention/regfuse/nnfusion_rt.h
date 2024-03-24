@@ -5,33 +5,15 @@
 
 // extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int B=4, int H=8, int Seq_k=2048,int Seq_q=2048);
 
-#include "welder_cuda.h"
+#include "kernels/utils/welder_cuda.h"
+#include "kernels/utils/reduce.h"
 #include <stdexcept>
 #include <assert.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <sstream>
-#ifndef __HALF_COMPARE_EX__
-#define __HALF_COMPARE_EX__
-inline __device__ half hmax(half x, half y) { return x > y ? x : y; }
-inline __device__ half hmin(half x, half y) { return x < y ? x : y; }
-#endif
-#define CUDA_SAFE_CALL(x)                                                                          \
-    do                                                                                             \
-    {                                                                                              \
-        cudaError_t result = (x);                                                                  \
-        if (result != cudaSuccess)                                                                 \
-        {                                                                                          \
-            const char* msg = cudaGetErrorString(result);                                          \
-            std::stringstream safe_call_ss;                                                        \
-            safe_call_ss << "\nerror: " #x " failed with error"                                    \
-                         << "\nfile: " << __FILE__ << "\nline: " << __LINE__ << "\nmsg: " << msg;  \
-            throw std::runtime_error(safe_call_ss.str());                                          \
-        }                                                                                          \
-    } while (0)
 #include <stdint.h>
 
-constexpr float softmax_scale = 1.250000e-01f;
 
 /*
 // 128*384
@@ -57,188 +39,13 @@ constexpr int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):
 
 constexpr int Nthreads = 256;
 
-extern "C" void cuda_init()
-{
-// CUDA_SAFE_CALL(cudaDeviceReset());
-// total memory:570687488
-CUDA_SAFE_CALL(cudaSetDevice(0));
-// create streams/handles
-}
-extern "C" void cuda_free()
-{
-CUDA_SAFE_CALL(cudaSetDevice(0));
-}
 */
 
 
-template<typename Layout>
-inline __device__ auto convert_layout_rowcol_Aregs(Layout rowcol_layout){
-  using namespace cute;
-  static_assert(decltype(size<0, 0>(rowcol_layout))::value == 2);
-  static_assert(decltype(size<1, 0>(rowcol_layout))::value == 2);
-  auto l = logical_divide(rowcol_layout, Shape<Underscore, Shape<Underscore, Int<2>>>{});  // ((2, MMA_M), (2, (2, MMA_N / 2)))
-  return make_layout(make_layout(get<0>(get<1>(l)), get<0>(get<0>(l)), get<0>(get<1>(get<1>(l)))),
-                       get<1>(get<0>(l)),
-                       get<1>(get<1>(get<1>(l))));
-}
-
-
-inline __device__ auto convert_layout_C_Aregs(){
-  using namespace cute;
-  auto layout_s = Layout<Shape<Shape<_2,_2>,_2,_16>>{};
-  auto l = logical_divide(layout_s,Shape<Underscore, Underscore,_2>{});
-  /*if(threadIdx.x==0 && blockIdx.x==0){
-    print(l.layout(),"\nl_layout\n");
-    print(make_layout(make_layout(get<0>(get<0>(l)),get<1>(get<0>(l)),get<0>(get<2>(l))),
-                     get<1>(l),
-                     get<1>(get<2>(l))));
-  }*/
-  return make_layout(make_layout(get<0>(get<0>(l)),get<1>(get<0>(l)),get<0>(get<2>(l))),
-                     get<1>(l),
-                     get<1>(get<2>(l)));
-
-  // return Layout<Shape<Shape<_2,_2,_2>,_2,_8>>{};
-}
-// m_old, m_new, acc_o, p, v
-
-
-template<class LayoutType>
-inline __device__ auto convert_layout_scores(LayoutType layout_s){
-  using namespace cute;
-  static_assert(decltype(size<0>(layout_s))::value == 4);
-  static_assert(decltype(rank(layout_s))::value == 3);
-  // auto layout_s = Layout<Shape<Shape<_2,_2>,_2,_16>>{};
-  auto l = logical_divide(layout_s, Shape<_2>{});  // ((2, 2), MMA_M, MMA_N)
-  return make_layout(make_layout(get<1>(get<0>(l)), get<1>(l)), make_layout(get<0>(get<0>(l)), get<2>(l)));
-}
-
-template <int N>
-CUTE_HOST_DEVICE
-void cp_async_wait_flash() {
-#if defined(CUTE_ARCH_CP_ASYNC_SM80_ENABLED)
-    asm volatile("cp.async.wait_group %0;\n" :: "n"(N));
-#endif
-}
-
-struct MaxOp_float {
-// This is slightly faster
-__device__ inline float operator()(float const &x, float const &y) { return max(x, y); } // cute::max(x,y)
-};
-template<typename T>
-struct SumOp {
-__device__ inline T operator()(T const & x, T const & y) { return x + y; }
-};
-template<typename T>
-struct SumAbsOp {
-__device__ inline T operator()(T const & x, T const & y) { return x + abs(y); }
-};
-
-template<int THREADS>
-struct Allreduce {
-    static_assert(THREADS == 32 || THREADS == 16 || THREADS == 8 || THREADS == 4);
-    template<typename T, typename Operator>
-    static __device__ inline T run(T x, Operator &op) {
-        constexpr int OFFSET = THREADS / 2;
-        x = op(x, __shfl_xor_sync(uint32_t(-1), x, OFFSET));
-        return Allreduce<OFFSET>::run(x, op);
-    }
-};
-template<>
-struct Allreduce<2> {
-template<typename T, typename Operator> 
-static __device__ inline T run(T x, Operator &op) {
-    x = op(x, __shfl_xor_sync(uint32_t(-1), x, 1));
-    return x;
-}
-};
-template<bool zero_init=true, typename Engine0, typename Layout0, typename Engine1, typename Layout1, typename Operator>
-__device__ inline void thread_reduce_(cute::Tensor<Engine0, Layout0> const &tensor, cute::Tensor<Engine1, Layout1> &summary, Operator &op) {
-  using namespace cute;
-    static_assert(Layout0::rank == 2, "Only support 2D Tensor");
-    static_assert(Layout1::rank == 1, "Only support 1D Tensor");
-    CUTE_STATIC_ASSERT_V(size<0>(summary) == size<0>(tensor));
-    #pragma unroll
-    for (int mi = 0; mi < size<0>(tensor); mi++) {
-        summary(mi) = zero_init ? op(0, tensor(mi, 0)) : op(summary(mi), tensor(mi, 0));
-        #pragma unroll
-        for (int ni = 1; ni < size<1>(tensor); ni++) {
-            summary(mi) = op(summary(mi), tensor(mi, ni));
-        }
-    }
-}
-template<typename Engine0, typename Layout0, typename Engine1, typename Layout1, typename Operator>
-__device__ inline void quad_allreduce_(cute::Tensor<Engine0, Layout0> &dst, cute::Tensor<Engine1, Layout1> &src, Operator &op) {
-    using namespace cute;
-    CUTE_STATIC_ASSERT_V(size(dst) == size(src));
-    #pragma unroll
-    for (int i = 0; i < size(dst); i++){
-        dst(i) = Allreduce<4>::run(src(i), op);
-    }
-}
-template<bool zero_init=true, typename Engine0, typename Layout0, typename Engine1, typename Layout1, typename Operator>
-__device__ inline void reduce_(cute::Tensor<Engine0, Layout0> const& tensor, cute::Tensor<Engine1, Layout1> &summary, Operator &op) {
-    thread_reduce_<zero_init>(tensor, summary, op);
-    quad_allreduce_(summary, summary, op);
-}
-
-template<bool zero_init=true, typename Engine0, typename Layout0, typename Engine1, typename Layout1>
-__device__ inline void reduce_max(cute::Tensor<Engine0, Layout0> const& tensor, cute::Tensor<Engine1, Layout1> &max){
-    MaxOp_float max_op;
-    reduce_<zero_init>(tensor, max, max_op);
-}
-
-template<typename Engine0, typename Layout0, typename Engine1, typename Layout1>
-__device__ inline void reduce_sum(cute::Tensor<Engine0, Layout0> const& tensor, cute::Tensor<Engine1, Layout1> &sum){
-    SumOp<float> sum_op;
-    reduce_(tensor, sum, sum_op);
-}
-
-template<typename Engine0, typename Layout0, typename Engine1, typename Layout1>
-__device__ inline void reduce_sumabs(cute::Tensor<Engine0, Layout0> const& tensor, cute::Tensor<Engine1, Layout1> &sum){
-    SumAbsOp<float> sumabs_op;
-    reduce_(tensor, sum, sumabs_op);
-}
-
-template<class Tensor0, class Tensor1, class Tensor2>
-__device__ inline void update_r(Tensor0& r_new_fragment, Tensor1& r_wo_clamp_fragment, Tensor2& scores){
-  using namespace cute;
-    // r_wo_clamp
-    Tensor r_wo_clamp_fragment_tmp = make_fragment_like(r_wo_clamp_fragment);
-    reduce_sumabs(scores, r_wo_clamp_fragment_tmp);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
-      r_wo_clamp_fragment(ax0) += r_wo_clamp_fragment_tmp(ax0);
-    }
-    // r_new = max(r_wo_clamp, 1)
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
-      r_new_fragment(ax0) = max(r_wo_clamp_fragment(ax0), 1.0f);
-    }
-} 
-
-template<class SmemTiledCopy1, class STensor1, class RTensor1,class Tensor0, class Tensor1>
-__device__ inline void multiply_mask(SmemTiledCopy1 smem_tiled_copy_mask, STensor1& sMask_copypartition, RTensor1& rMask_copy_view, 
-                            Tensor0& acc_s_fragment, Tensor1& rMask){
-  using namespace cute;
-  // qk*m
-    cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,_0{}), rMask_copy_view(_,_,_0{}));
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<2>(acc_s_fragment);ax0++){
-      if(ax0 < size<2>(acc_s_fragment)-1){
-        cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,ax0+1), rMask_copy_view(_,_,ax0+1));
-      }
-      #pragma unroll
-      for(int ax1 = 0;ax1 < size<1>(acc_s_fragment);ax1++){
-        #pragma unroll
-        for(int ax2 = 0;ax2 < size<0>(acc_s_fragment);ax2++){
-          acc_s_fragment(ax2,ax1,ax0) = acc_s_fragment(ax2,ax1,ax0) * __half2float(rMask(ax2,ax1,ax0));
-        }
-      }
-    }
-}
 
 template<int Kd,int D, int Br,int Bc,int Nthreads,int BlockKSmem=Kd, int num_stages_qk=1, bool load_q_once=true, int BlockKSmem2=Bc, int num_stages_v=1,int SmemKAtom=64,int kSwizzle=3,bool unrollLastIter=true>
 __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
+  constexpr float softmax_scale = 1.250000e-01f;
 
     extern __shared__ char shared[];
 
@@ -451,7 +258,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     cute::copy(m_new_fragment, m_old_fragment);
     // m_new
     Tensor scores_max = make_fragment_like(m_new_fragment);
-    reduce_max<true>(scores, scores_max);
+    reduce_max<4, true>(scores, scores_max);
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(m_new_fragment);ax0++){
       m_new_fragment(ax0) = max(m_new_fragment(ax0), scores_max(ax0)); // lse_new
@@ -478,7 +285,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     }
     // lse
     Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum(scores, scores_sum);
+    reduce_sum<4>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(lse_new_fragment);ax0++){
       lse_new_fragment(ax0) = lse_new_fragment(ax0) + scores_sum(ax0);// m_new_fragment(ax0) + log(exp(lse_new_fragment(ax0)-m_new_fragment(ax0))+scores_sum(ax0));
@@ -540,7 +347,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     cute::copy(m_new_fragment, m_old_fragment);
     // m_new
     Tensor scores_max = make_fragment_like(m_new_fragment);
-    reduce_max<true>(scores, scores_max);
+    reduce_max<4,true>(scores, scores_max);
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(m_new_fragment);ax0++){
       m_new_fragment(ax0) = max(m_new_fragment(ax0), scores_max(ax0));
@@ -567,7 +374,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     }
     // lse
     Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum(scores, scores_sum);
+    reduce_sum<4>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(lse_new_fragment);ax0++){
       lse_new_fragment(ax0) = lse_new_fragment(ax0)+scores_sum(ax0);// m_new_fragment(ax0) + log(exp(lse_new_fragment(ax0)-m_new_fragment(ax0))+scores_sum(ax0));
