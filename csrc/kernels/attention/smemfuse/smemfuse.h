@@ -14,7 +14,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <sstream>
-#include "nnfusion_rt.h"
 #include <stdint.h>
 
 

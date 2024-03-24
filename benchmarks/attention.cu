@@ -10,8 +10,8 @@
 #include <iostream>
 #include <vector>
 
-#include "kernels/attention/smemfuse/nnfusion_rt.h"
-#include "kernels/attention/regfuse/nnfusion_rt.h"
+#include "kernels/attention/smemfuse/smemfuse.h"
+#include "kernels/attention/regfuse/regfuse.h"
 
 /*
 constexpr int Br = {Br};
