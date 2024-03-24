@@ -3,7 +3,10 @@
 #include <mma.h>
 // extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_8_0_0, int B=4, int H=8, int Seq_k=2048, int Seq_q=2048);
 
-#include "kernels/utils/welder_cuda.h"
+// #include "kernels/utils/welder_cuda.h"
+#include "kernels/utils/gmem_copy.h"
+#include "kernels/utils/matmul.h"
+#include "kernels/utils/misc.h"
 #include "kernels/utils/reduce.h"
 
 #include <stdexcept>
