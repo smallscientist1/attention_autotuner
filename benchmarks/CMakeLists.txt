@@ -20,7 +20,7 @@ message(STATUS "CUDA Architecture flags = ${ARCH_FLAGS}")
 set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
 list(APPEND CUTLASS_CUDA_NVCC_FLAGS "--expt-relaxed-constexpr" "--std=c++17")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUTLASS_CUDA_NVCC_FLAGS} ${ARCH_FLAGS} -O3 --use_fast_math -lineinfo")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUTLASS_CUDA_NVCC_FLAGS} ${ARCH_FLAGS} -O3 --use_fast_math -lineinfo -Xptxas=-v --disable-warnings")
 
 include_directories("../third_party/cutlass/include")
 include_directories("../csrc/")

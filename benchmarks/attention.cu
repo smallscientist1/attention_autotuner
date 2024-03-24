@@ -113,7 +113,7 @@ float test_attention(ProblemShape shape){
     int shared_out = br * d * sizeof(half);
     int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
 
-    auto kernel = &flashattn_fwd<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,SmemKAtom,kSwizzle,unrollLastIter>;
+    auto kernel = &flashattn_fwd_regfuse<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,SmemKAtom,kSwizzle,unrollLastIter>;
     if(shared_mem > 48*1024){
         cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
     }

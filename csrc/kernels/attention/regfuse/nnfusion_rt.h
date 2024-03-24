@@ -238,7 +238,7 @@ __device__ inline void multiply_mask(SmemTiledCopy1 smem_tiled_copy_mask, STenso
 }
 
 template<int Kd,int D, int Br,int Bc,int Nthreads,int BlockKSmem=Kd, int num_stages_qk=1, bool load_q_once=true, int BlockKSmem2=Bc, int num_stages_v=1,int SmemKAtom=64,int kSwizzle=3,bool unrollLastIter=true>
-__global__ void __launch_bounds__(Nthreads) flashattn_fwd(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
+__global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
 
     extern __shared__ char shared[];
 
