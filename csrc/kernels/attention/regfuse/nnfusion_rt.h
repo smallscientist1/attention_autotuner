@@ -3,7 +3,7 @@
 #include <mma.h>
 
 
-extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int B=4, int H=8, int Seq_k=2048,int Seq_q=2048);
+// extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int B=4, int H=8, int Seq_k=2048,int Seq_q=2048);
 
 #include "welder_cuda.h"
 #include <stdexcept>
@@ -56,7 +56,7 @@ constexpr int shared_out = Br * D * sizeof(half);
 constexpr int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
 
 constexpr int Nthreads = 256;
-*/
+
 extern "C" void cuda_init()
 {
 // CUDA_SAFE_CALL(cudaDeviceReset());
@@ -68,7 +68,7 @@ extern "C" void cuda_free()
 {
 CUDA_SAFE_CALL(cudaSetDevice(0));
 }
-
+*/
 
 
 template<typename Layout>
