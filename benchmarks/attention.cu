@@ -10,33 +10,11 @@
 #include <iostream>
 #include <vector>
 
+#include "configs.h"
 #include "kernels/attention/smemfuse/smemfuse.h"
 #include "kernels/attention/regfuse/regfuse.h"
 
-/*
-constexpr int Br = {Br};
-constexpr int Bc = {Bc};
-constexpr int Kd = {Kd};
-constexpr int D = {D};
-
-constexpr bool unrollLastIter = {unrollLastIter};
-// for q&k splitk
-__device__ constexpr int BlockKSmem = {BlockKSmem};
-constexpr int num_stages_qk = {num_stages_qk};
-constexpr bool load_q_once = (BlockKSmem == Kd);
-// for V splitk
-constexpr int BlockKSmem2 = {BlockKSmem2};
-constexpr int num_stages_v = {num_stages_v};
-// for sQ,sK,sV,sO swizzle
-constexpr int SmemKAtom = BlockKSmem % 64 == 0 ? 64 : 32;
-constexpr int kSwizzle = SmemKAtom == 32 ? 2 : 3;
-
-constexpr int shared_matmulqkv = num_stages_qk*(Br)*BlockKSmem*sizeof(half)+num_stages_qk*Bc*BlockKSmem*sizeof(half)+num_stages_v*BlockKSmem2*D*sizeof(half);
-constexpr int shared_out = Br * D * sizeof(half);
-constexpr int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
-
-constexpr int Nthreads = {Nthreads};*/
-
+// #include <torch/all.h>
 
 class ProblemShape{
 public:
@@ -45,35 +23,6 @@ public:
     int B,H,Seq_q,Seq_k;
 };
 
-template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
-/*smem_fuse only*/ int warps_mma1_N_ = 1, int warps_mma_N_ = 1, 
-int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, int SmemKAtom_=64, bool unrollLastIter_=true, 
-/*smem_fuse only*/int SmemKAtomV_ = 64>
-class ImplementShape{
-public:
-    constexpr static int Br = Br_;
-    constexpr static int Bc = Bc_;
-    constexpr static int Kd = Kd_;
-    constexpr static int D = D_;
-    constexpr static int Nthreads = Nthreads_;
-    constexpr static int BlockKSmem = BlockKSmem_;
-    constexpr static int num_stages_qk = num_stages_qk_;
-    constexpr static bool load_q_once = (BlockKSmem == Kd);
-    constexpr static int BlockKSmem2 = BlockKSmem2_;
-    constexpr static int num_stages_v = num_stages_v_;
-    constexpr static int SmemKAtom = SmemKAtom_;
-    constexpr static int kSwizzle = SmemKAtom == 32 ? 2 : 3;
-    constexpr static bool unrollLastIter = unrollLastIter_;
-
-    constexpr static int SmemKAtomV = SmemKAtomV_;
-    constexpr static int kSwizzleV = SmemKAtomV == 32 ? 2 : 3;
-    constexpr static int SmemKAtomP = Bc % 64 == 0 ? 64 : 32;
-    constexpr static int kSwizzleP = SmemKAtomP == 32 ? 2 : 3;
-    constexpr static int SmemKAtomPf16 = 64;
-    constexpr static int kSwizzlePf16 = SmemKAtomPf16 == 32 ? 2 : 3;
-    constexpr static int warps_mma1_N = warps_mma1_N_;
-    constexpr static int warps_mma_N = warps_mma_N_;
-};
 
 struct prg
 {
@@ -310,8 +259,37 @@ int main(){
     float ms = test_regfuse_attention<InpleConfig>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
+    // ms = test_regfuse_attention<ImplementShape<128,128,256,256,256,1,1,64,2,128,1,64,false,64>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_regfuse_attention<ImplementShape<128,64,64,64,256>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_regfuse_attention<ImplementShape<128,64,256,64,256>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_regfuse_attention<ImplementShape<128,128,64,64,256>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    ms = test_regfuse_attention<ImplementShape<128,64,256,128,256>>(PS);
+    std::cout << "Time: " << ms << "ms" << std::endl;
+
 
     ms = test_smemfuse_attention<ImplementShape<64,64,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
+
+
+
+
+    // int Batch = 4, Head = 8, Seqlen_q = 2048,seqlen_kv = 2048, dim_qk = 256, dim_v = 256;
+    // constexpr float softmax_scale = 1.25e-1;
+    // torch::TensorOptions option(torch::kFloat16);
+    // torch::Tensor q = torch::randn({Batch, Head, Seqlen_q, dim_qk}, option).to(torch::kCUDA);
+    // torch::Tensor k = torch::randn({Batch, Head, seqlen_kv, dim_qk}, option).to(torch::kCUDA);
+    // torch::Tensor v = torch::randn({Batch, Head, seqlen_kv, dim_v}, option).to(torch::kCUDA);
+
+    // torch::Tensor attn = torch::matmul(q, k.transpose(-2, -1)) / softmax_scale;
+    // attn = attn.softmax(-1);
+    // torch::Tensor out = torch::matmul(attn, v);
+    // std::cout << out.sizes() << std::endl;
+
+
+
     return 0;
 }

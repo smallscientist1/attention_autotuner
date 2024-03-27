@@ -11,6 +11,11 @@ message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}, version: "
 message(STATUS "C compiler: ${CMAKE_C_COMPILER}, version: "
                "${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
 
+# find_package(Torch REQUIRED)
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+# message(STATUS "Torch include: ${TORCH_INCLUDE_DIRS}")
+# message(STATUS "Torch CXX flags: ${TORCH_CXX_FLAGS}")
+
 find_package(CUDA QUIET REQUIRED)
 # find_package(CuDNN QUIET REQUIRED)
 
@@ -26,8 +31,13 @@ include_directories("../third_party/cutlass/include")
 include_directories("../csrc/")
 
 
+message(STATUS "final CXX flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "final CUDA flags: ${CMAKE_CUDA_FLAGS}")
+message(STATUS "final CUDA NVCC flags: ${CUDA_NVCC_FLAGS}")
+
 cuda_add_executable(attention attention.cu)
 target_link_libraries(attention 
     ${CUDA_LIBRARIES}
+    # ${TORCH_LIBRARIES}
     # ${CUDA_CUBLAS_LIBRARIES}
 )
