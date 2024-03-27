@@ -33,3 +33,11 @@ public:
     constexpr static int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
     constexpr static int num_stages_mask = num_stages_mask_;
 };
+
+class ProblemShape{
+public:
+    ProblemShape(int batch,int head,int seqlen_q,int seqlen_kv):B(batch),H(head),Seq_q(seqlen_q),Seq_k(seqlen_kv){};
+
+    int B,H,Seq_q,Seq_k;
+};
+

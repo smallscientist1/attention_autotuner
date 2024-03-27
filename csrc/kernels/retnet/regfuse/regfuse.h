@@ -2,9 +2,6 @@
 #include <cuda_fp16.h>
 #include <mma.h>
 
-
-// extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int B=4, int H=8, int Seq_k=2048,int Seq_q=2048);
-
 #include "kernels/utils/gmem_copy.h"
 #include "kernels/utils/matmul.h"
 #include "kernels/utils/misc.h"
@@ -16,38 +13,74 @@
 #include <sstream>
 #include <stdint.h>
 
-
 /*
 // 128*384
 constexpr int Br = 128;
 constexpr int Bc = 64; // 32
 constexpr int Kd = 256;
-constexpr int D = 256;
+constexpr int D = 384;
 
-constexpr bool unrollLastIter = true;
+constexpr bool unrollLastIter = false;
 // for sQ,sK,sV,sO swizzle
 constexpr int SmemKAtom = 64;
 constexpr int kSwizzle = SmemKAtom == 32 ? 2 : 3;
+// for mask swizzlw
+constexpr int SmemKAtomMask = Bc % 64 == 0 ? 64 : 32;
+constexpr int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
 // for q&k splitk
 __device__ constexpr int BlockKSmem = 256; // avoid 'error: identifier "BlockKSmem" is undefined in device code'
 constexpr int num_stages_qk = 1;
-constexpr bool load_q_once = (BlockKSmem == Kd);
+constexpr int num_stages_mask = 1;
 // for V splitk
 constexpr int BlockKSmem2 = 64; // 32
 constexpr int num_stages_v = 1;
 constexpr int shared_matmulqkv = num_stages_qk*(Br)*BlockKSmem*sizeof(half)+num_stages_qk*Bc*BlockKSmem*sizeof(half)+num_stages_v*BlockKSmem2*D*sizeof(half);
-constexpr int shared_out = Br * D * sizeof(half);
-constexpr int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
+constexpr int shared_mask = num_stages_mask*Br*Bc*sizeof(half);
+constexpr int shared_mem =  shared_matmulqkv+shared_mask;//(acc_o(p(q,k),v))
 
 constexpr int Nthreads = 256;
-
 */
 
+template<class Tensor0, class Tensor1, class Tensor2>
+__device__ inline void update_r(Tensor0& r_new_fragment, Tensor1& r_wo_clamp_fragment, Tensor2& scores){
+  using namespace cute;
+    // r_wo_clamp
+    Tensor r_wo_clamp_fragment_tmp = make_fragment_like(r_wo_clamp_fragment);
+    reduce_sumabs<4>(scores, r_wo_clamp_fragment_tmp);
+    #pragma unroll
+    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
+      r_wo_clamp_fragment(ax0) += r_wo_clamp_fragment_tmp(ax0);
+    }
+    // r_new = max(r_wo_clamp, 1)
+    #pragma unroll
+    for(int ax0 = 0;ax0 < size<0>(r_wo_clamp_fragment);ax0++){
+      r_new_fragment(ax0) = max(r_wo_clamp_fragment(ax0), 1.0f);
+    }
+} 
 
+template<class SmemTiledCopy1, class STensor1, class RTensor1,class Tensor0, class Tensor1>
+__device__ inline void multiply_mask(SmemTiledCopy1 smem_tiled_copy_mask, STensor1& sMask_copypartition, RTensor1& rMask_copy_view, 
+                            Tensor0& acc_s_fragment, Tensor1& rMask){
+  using namespace cute;
+  // qk*m
+    cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,_0{}), rMask_copy_view(_,_,_0{}));
+    #pragma unroll
+    for(int ax0 = 0;ax0 < size<2>(acc_s_fragment);ax0++){
+      if(ax0 < size<2>(acc_s_fragment)-1){
+        cute::copy(smem_tiled_copy_mask, sMask_copypartition(_,_,ax0+1), rMask_copy_view(_,_,ax0+1));
+      }
+      #pragma unroll
+      for(int ax1 = 0;ax1 < size<1>(acc_s_fragment);ax1++){
+        #pragma unroll
+        for(int ax2 = 0;ax2 < size<0>(acc_s_fragment);ax2++){
+          acc_s_fragment(ax2,ax1,ax0) = acc_s_fragment(ax2,ax1,ax0) * __half2float(rMask(ax2,ax1,ax0));
+        }
+      }
+    }
+}
 
-template<int Kd,int D, int Br,int Bc,int Nthreads,int BlockKSmem=Kd, int num_stages_qk=1, bool load_q_once=true, int BlockKSmem2=Bc, int num_stages_v=1,int SmemKAtom=64,int kSwizzle=3,bool unrollLastIter=true>
-__global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
-  constexpr float softmax_scale = 1.250000e-01f;
+template<int Kd,int D, int Br,int Bc,int Nthreads,int BlockKSmem=Kd, int num_stages_qk=1,int BlockKSmem2=Bc, int num_stages_v=1, int num_stages_mask=1,int SmemKAtom=64,int kSwizzle=3,int SmemKAtomMask=64,int kSwizzleMask=3,bool unrollLastIter=true>
+__global__ void __launch_bounds__(Nthreads) ret_fwd_regfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
 
     extern __shared__ char shared[];
 
@@ -61,6 +94,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     int iters = (len+Bc-1) / Bc;
     int k_offset = ((int)blockIdx.x / Tr) * Kd * seq_k;
     int v_offset = ((int)blockIdx.x / Tr) * D * seq_k;
+    // int mask_offset = ((int)blockIdx.x%(Tr * H)) * Tc * Br * Bc;
+    int mask_offset = ((int)blockIdx.x%(Tr * H)) * Br * seq_k;
     int q_offset = (int)blockIdx.x  * Kd * Br;
     int o_offset = (int)blockIdx.x  * D * Br;
     int lse_offset = (int)blockIdx.x * Br;
@@ -71,7 +106,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     // int m_new = 0;
     // constexpr int lse_new = Br*sizeof(half); // 256
     // int m_old = lse_new+Br*sizeof(half);
-    constexpr int p = 0;
+    constexpr int sMask_offset = 0;
+    constexpr int p = sMask_offset+num_stages_mask*Br*Bc*sizeof(half); // p(q,k)
 
     constexpr int Nwarps = Nthreads/32;
     static_assert(Kd%(BlockKSmem)==0,"Kd%(BlockKSmem)!=0");
@@ -146,9 +182,36 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     Tensor rK_copy_view = smem_thr_copy_K.retile_D(rK);
     Tensor rK1_copy_view = smem_thr_copy_K.retile_D(rK1);
 
-    Tensor m_new_fragment = make_tensor<float>(Shape<Int<2*size<1>(acc_s_fragment)>>{});
-    // Tensor m_old_fragment = make_fragment_like(m_new_fragment);
-    Tensor lse_new_fragment = make_fragment_like(m_new_fragment);
+    Tensor gMask = make_tensor(make_gmem_ptr(Parameter_3_0_0+mask_offset), Shape<Int<Br>,Int<Bc>>{}, make_stride(seq_k,_1{}));
+    using SmemLayoutAtomMask = decltype(
+        composition(Swizzle<kSwizzleMask, 3, 3>{},
+                    Layout<Shape<Int<8>, Int<SmemKAtomMask>>,
+                           Stride<Int<SmemKAtomMask>, _1>>{}));
+    using SmemLayoutMask = decltype(tile_to_shape(
+        SmemLayoutAtomMask{},
+        Shape<Int<Br>, Int<Bc>>{}));
+    Tensor sMask = make_tensor(make_smem_ptr((half*)(shared+sMask_offset)), SmemLayoutMask{});
+    using GmemCopyLayoutAtomMask = Layout<Shape <Int<Nthreads / (SmemKAtomMask/8)>, Int<SmemKAtomMask/8>>,
+                                  Stride<Int<SmemKAtomMask/8>, _1>>;
+    using GmemTiledCopyMask = decltype(
+        make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEGLOBAL<cute::uint128_t>, half>{},
+                        GmemCopyLayoutAtomMask{},
+                        Layout<Shape<_1, _8>>{})); 
+    GmemTiledCopyMask gmem_tiled_copy_Mask;
+    auto gmem_thr_copy_Mask = gmem_tiled_copy_Mask.get_thread_slice(threadIdx.x);
+    Tensor gMask_partition = gmem_thr_copy_Mask.partition_S(gMask);
+    Tensor sMask_partition = gmem_thr_copy_Mask.partition_D(sMask);
+    using SmemCopyAtomMask = Copy_Atom<DefaultCopy, half>;
+    auto smem_tiled_copy_mask = make_tiled_copy_C(SmemCopyAtomMask{}, tiled_mma1);
+    auto smem_thr_copy_mask = smem_tiled_copy_mask.get_thread_slice(threadIdx.x);
+    Tensor rMask = partition_fragment_C(tiled_mma1, Shape<Int<Br>,Int<Bc>>{});
+    Tensor rMask_copy_view = smem_thr_copy_mask.retile_D(rMask);
+    Tensor sMask_copypartition = smem_thr_copy_mask.partition_S(sMask);
+
+
+    Tensor r_wo_clamp_fragment = make_tensor<float>(Shape<Int<2*size<1>(acc_s_fragment)>>{});
+    Tensor r_new_fragment = make_fragment_like(r_wo_clamp_fragment);
+    // Tensor lse_new_fragment = make_fragment_like(m_new_fragment);
 
     Tensor gV = make_tensor(make_gmem_ptr(Parameter_2_0_0+v_offset), Shape<Int<Bc>,Int<D>>{}, make_stride(Int<D>{},_1{}));
     // (32,256)
@@ -210,12 +273,12 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
                       gK1_partition, sK1_partition,
                       BlockKSmem, size(sQ1),
                       BlockKSmem, size(sK1),num_stages_qk);
-    CopyAsyncV_g2s cp_g2s_k(gmem_tiled_copy_QKV, 
-                      gK1_partition, sK1_partition, 
-                      BlockKSmem, size(sK1),num_stages_qk);
     CopyAsyncV_g2s cp_g2s_v(gmem_tiled_copy_QKV, 
                       gV1_partition, sV1_partition, 
                       BlockKSmem2*D, size(sV1),num_stages_v);
+    CopyAsyncV_g2s cp_g2s_mask(gmem_tiled_copy_Mask, 
+                      gMask_partition, sMask_partition, 
+                      Bc, size(sMask),num_stages_mask);
     MatmulQK_s2r matmul_qk_s2r(smem_tiled_copy_Q, sQ1_copypartition, rQ1_copy_view, 
                                smem_tiled_copy_K, sK1_copypartition, rK1_copy_view, 
                                tiled_mma1, rQ1, rK1, acc_s_fragment, 
@@ -226,8 +289,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
 
     cp_g2s_qk.prologue();
 
-    cute::fill(lse_new_fragment, 0.0f);
-    cute::fill(m_new_fragment, -INFINITY);
+    cute::fill(r_new_fragment, 0.0f);
+    cute::fill(r_wo_clamp_fragment, 0.0f);
     clear(acc_o_fragment);
 
     // #pragma unroll
@@ -244,53 +307,38 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     }
      cp_async_wait_flash<0>();
     __syncthreads();
-    cp_g2s_v.prologue();
+    cp_g2s_mask.prologue();
     matmul_qk_s2r.epilogue();
 
+    cp_async_wait_flash<0>();
+    __syncthreads();
+    cp_g2s_v.prologue();
+    
+    // qk*m
+    multiply_mask(smem_tiled_copy_mask, sMask_copypartition, rMask_copy_view, acc_s_fragment, rMask);
+
     Tensor scores = make_tensor(acc_s_fragment.data(),convert_layout_scores(acc_s_fragment.layout()));// ((2,2)(Atom),M,N) -> ((2,M),(2,N))
-    // scores * softmax_scale
-    /*#pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
-      #pragma unroll
-      for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
-        scores(ax0,ax1) *= softmax_scale;
-      }
-    }*/
-    Tensor m_old_fragment = make_fragment_like(m_new_fragment);
-    cute::copy(m_new_fragment, m_old_fragment);
-    // m_new
-    Tensor scores_max = make_fragment_like(m_new_fragment);
-    reduce_max<4, true>(scores, scores_max);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(m_new_fragment);ax0++){
-      m_new_fragment(ax0) = max(m_new_fragment(ax0), scores_max(ax0)); // lse_new
-    }
+    Tensor r_old_fragment = make_fragment_like(r_new_fragment);
+    cute::copy(r_new_fragment, r_old_fragment);
+    // r_new, r_wo_clamp
+    update_r(r_new_fragment, r_wo_clamp_fragment, scores);
     // acc_o
     Tensor acc_o_rowcol = make_tensor(acc_o_fragment.data(),  convert_layout_scores(acc_o_fragment.layout()));
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(acc_o_rowcol);ax0++){
-        float scale = exp((m_old_fragment(ax0)-m_new_fragment(ax0))*softmax_scale);
-        lse_new_fragment(ax0) = lse_new_fragment(ax0) * scale;
+        float scale = r_old_fragment(ax0)/r_new_fragment(ax0);
         #pragma unroll
         for(int ax1 = 0;ax1 < size<1>(acc_o_rowcol);ax1++){
             acc_o_rowcol(ax0,ax1) *= scale;
         }
     }
-    // p = exp(qk-m_new)
+    // qkm/r_new
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
-      float m_scaled = m_new_fragment(ax0)*softmax_scale;
       #pragma unroll
       for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
-        scores(ax0,ax1) = exp(scores(ax0,ax1)*softmax_scale - m_scaled);
+        scores(ax0,ax1) = scores(ax0,ax1) / r_new_fragment(ax0);
       }
-    }
-    // lse
-    Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum<4>(scores, scores_sum);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(lse_new_fragment);ax0++){
-      lse_new_fragment(ax0) = lse_new_fragment(ax0) + scores_sum(ax0);// m_new_fragment(ax0) + log(exp(lse_new_fragment(ax0)-m_new_fragment(ax0))+scores_sum(ax0));
     }
 
     cutlass::NumericArrayConverter<half, float, decltype(size(scores))::value> convert_op;
@@ -309,13 +357,9 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
      cp_async_wait_flash<0>();
     __syncthreads();
     if(i < iters-1){
-      gK1_partition.data() = gK1_partition.data() + (-Kd) + Bc*Kd;
-      if(load_q_once){
-        cp_g2s_k.prologue();
-      }else{
-        gQ1_partition.data() = gQ1_partition.data() + (-Kd);
-        cp_g2s_qk.prologue();
-      }
+    gK1_partition.data() = gK1_partition.data() + (-Kd) + Bc*Kd;
+    gQ1_partition.data() = gQ1_partition.data() + (-Kd);
+    cp_g2s_qk.prologue();
     }
     matmul_v_s2r.epilogue(rP_Aregs);
 
@@ -333,53 +377,38 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     }
      cp_async_wait_flash<0>();
     __syncthreads();
-    cp_g2s_v.prologue();
+    cp_g2s_mask.prologue();
     matmul_qk_s2r.epilogue();
 
+    cp_async_wait_flash<0>();
+    __syncthreads();
+    cp_g2s_v.prologue();
+    
+    // qk*m
+    multiply_mask(smem_tiled_copy_mask, sMask_copypartition, rMask_copy_view, acc_s_fragment, rMask);
+
     Tensor scores = make_tensor(acc_s_fragment.data(),convert_layout_scores(acc_s_fragment.layout()));// ((2,2)(Atom),M,N) -> ((2,M),(2,N))
-    // scores * softmax_scale
-    /*#pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
-      #pragma unroll
-      for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
-        scores(ax0,ax1) *= softmax_scale;
-      }
-    }*/
-    Tensor m_old_fragment = make_fragment_like(m_new_fragment);
-    cute::copy(m_new_fragment, m_old_fragment);
-    // m_new
-    Tensor scores_max = make_fragment_like(m_new_fragment);
-    reduce_max<4,true>(scores, scores_max);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(m_new_fragment);ax0++){
-      m_new_fragment(ax0) = max(m_new_fragment(ax0), scores_max(ax0));
-    }
+    Tensor r_old_fragment = make_fragment_like(r_new_fragment);
+    cute::copy(r_new_fragment, r_old_fragment);
+    // r_new, r_wo_clamp
+    update_r(r_new_fragment, r_wo_clamp_fragment, scores);
     // acc_o
     Tensor acc_o_rowcol = make_tensor(acc_o_fragment.data(),  convert_layout_scores(acc_o_fragment.layout()));
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(acc_o_rowcol);ax0++){
-        float scale = exp((m_old_fragment(ax0)-m_new_fragment(ax0))*softmax_scale);
-        lse_new_fragment(ax0) = lse_new_fragment(ax0) * scale;
+        float scale = r_old_fragment(ax0)/r_new_fragment(ax0);
         #pragma unroll
         for(int ax1 = 0;ax1 < size<1>(acc_o_rowcol);ax1++){
             acc_o_rowcol(ax0,ax1) *= scale;
         }
     }
-    // p = exp(qk-m_new)
+    // qkm/r_new
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
-      float m_scaled = m_new_fragment(ax0)*softmax_scale;
       #pragma unroll
       for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
-        scores(ax0,ax1) = exp(scores(ax0,ax1)*softmax_scale - m_scaled);
+        scores(ax0,ax1) = scores(ax0,ax1) / r_new_fragment(ax0);
       }
-    }
-    // lse
-    Tensor scores_sum = make_fragment_like(lse_new_fragment);
-    reduce_sum<4>(scores, scores_sum);
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(lse_new_fragment);ax0++){
-      lse_new_fragment(ax0) = lse_new_fragment(ax0)+scores_sum(ax0);// m_new_fragment(ax0) + log(exp(lse_new_fragment(ax0)-m_new_fragment(ax0))+scores_sum(ax0));
     }
 
     cutlass::NumericArrayConverter<half, float, decltype(size(scores))::value> convert_op;
@@ -399,18 +428,6 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     __syncthreads();
     matmul_v_s2r.epilogue(rP_Aregs);
 
-    }
-
-    // out
-    Tensor acc_o_rowcol = make_tensor(acc_o_fragment.data(),  convert_layout_scores(acc_o_fragment.layout()));
-    #pragma unroll
-    for(int ax0 = 0;ax0 < size<0>(acc_o_rowcol);ax0++){
-        float scale = 1/lse_new_fragment(ax0);// exp(m_new_fragment(ax0)-lse_new_fragment(ax0));
-        lse_new_fragment(ax0) = m_new_fragment(ax0)*softmax_scale + log(lse_new_fragment(ax0));
-        #pragma unroll
-        for(int ax1 = 0;ax1 < size<1>(acc_o_rowcol);ax1++){
-            acc_o_rowcol(ax0,ax1) *= scale;
-        }
     }
 
     cutlass::NumericArrayConverter<half, float, decltype(size(acc_o_fragment))::value> convert_op2;
@@ -451,4 +468,3 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     }
 
 }
-
