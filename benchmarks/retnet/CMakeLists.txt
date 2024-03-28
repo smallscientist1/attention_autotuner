@@ -1,3 +1,4 @@
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 cmake_minimum_required(VERSION 3.18)
 project(bench_retnet)
 
@@ -25,7 +26,8 @@ message(STATUS "CUDA Architecture flags = ${ARCH_FLAGS}")
 set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
 list(APPEND CUTLASS_CUDA_NVCC_FLAGS "--expt-relaxed-constexpr" "--std=c++17")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUTLASS_CUDA_NVCC_FLAGS} ${ARCH_FLAGS} -O3 --use_fast_math -lineinfo -Xptxas=-v --disable-warnings")
+# set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUTLASS_CUDA_NVCC_FLAGS} ${ARCH_FLAGS} -O3 --use_fast_math -lineinfo -Xptxas=-v --disable-warnings")
+list(APPEND CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "${CUTLASS_CUDA_NVCC_FLAGS}" "${ARCH_FLAGS}" "-O3" "--use_fast_math" "-lineinfo" "-Xptxas=-v" "--disable-warnings")
 
 include_directories("../../third_party/cutlass/include")
 include_directories("../../csrc/")
@@ -41,3 +43,5 @@ target_link_libraries(retnet
     # ${TORCH_LIBRARIES}
     # ${CUDA_CUBLAS_LIBRARIES}
 )
+
+# target_compile_options(retnet PRIVATE ${CUDA_NVCC_FLAGS})
