@@ -41,3 +41,12 @@ public:
     int B,H,Seq_q,Seq_k;
 };
 
+class recurrentShape: public ProblemShape{
+public:
+    recurrentShape(int batch,int head,int seqlen_q,int seqlen_kv,int dim_qk, int dim_v):ProblemShape(batch,head,seqlen_q,seqlen_kv),dim_qk(dim_qk),dim_v(dim_v),block_dimqk(dim_qk){
+
+    };
+
+    int dim_qk,dim_v,block_dimqk;
+};
+

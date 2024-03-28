@@ -13,6 +13,7 @@
 #include "../configs.h"
 #include "kernels/retnet/smemfuse/smemfuse.h"
 #include "kernels/retnet/regfuse/regfuse.h"
+#include "kernels/retnet/recurrent/recurrent.h"
 
 // #include <torch/all.h>
 
@@ -262,6 +263,94 @@ float test_smemfuse_retnet(ProblemShape shape){
 
 }
 
+float test_recurrent_retnet(recurrentShape shape){
+    typedef float data_type;
+
+    int B = shape.B;
+    int H = shape.H;
+    int Seq_q = shape.Seq_q;
+    int Seq_k = shape.Seq_k;
+    int dim_qk = shape.dim_qk;
+    int dim_v = shape.dim_v;
+    int block_dimqk = shape.block_dimqk;
+    assert(Seq_q == Seq_k);
+    assert(block_dimqk == dim_qk);
+
+    thrust::device_vector<int> cache(int(256e6/4));
+    thrust::device_vector<data_type> Parameter_0_0_0(B*H*Seq_q*dim_qk);
+    thrust::device_vector<data_type> Parameter_1_0_0(B*H*Seq_k*dim_qk);
+    thrust::device_vector<data_type> Parameter_2_0_0(B*H*Seq_k*dim_v);
+    thrust::device_vector<data_type> Parameter_3_0_0(H*Seq_k);
+
+    thrust::device_vector<data_type> Result_7_0_0(B*H*Seq_q*dim_v);
+    thrust::counting_iterator<unsigned int>  index_begin(0);
+    thrust::transform(index_begin, index_begin + B*H*Seq_q*dim_qk, Parameter_0_0_0.begin(), prg());
+    thrust::transform(index_begin, index_begin + B*H*Seq_k*dim_qk, Parameter_1_0_0.begin(), prg());
+    thrust::transform(index_begin, index_begin + B*H*Seq_k*dim_v, Parameter_2_0_0.begin(), prg());
+    thrust::transform(index_begin, index_begin + H*Seq_k, Parameter_3_0_0.begin(), prg());
+
+    auto q_ptr = thrust::raw_pointer_cast(Parameter_0_0_0.data());
+    auto k_ptr = thrust::raw_pointer_cast(Parameter_1_0_0.data());
+    auto v_ptr = thrust::raw_pointer_cast(Parameter_2_0_0.data());
+    auto decay_ptr = thrust::raw_pointer_cast(Parameter_3_0_0.data());
+    auto o_ptr = thrust::raw_pointer_cast(Result_7_0_0.data());
+
+    auto funcc = &retnet_recurrent_fwd;
+
+    float ms;
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    funcc(q_ptr,k_ptr,v_ptr,decay_ptr,o_ptr,B,H,dim_qk,dim_v,Seq_k,block_dimqk);
+    cudaEventRecord(start, 0);
+    for(int _ = 0; _ < 5; _++)
+        funcc(q_ptr,k_ptr,v_ptr,decay_ptr,o_ptr,B,H,dim_qk,dim_v,Seq_k,block_dimqk);
+    if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    if(cudaGetLastError() != cudaSuccess) {
+        printf("CUDA error: %s\n", cudaGetErrorString(cudaGetLastError()));
+        return -1;
+    }
+    cudaEventElapsedTime(&ms, start, stop);
+    int warm_up = int(ceil(50.0 / (ms/5)));
+    int repeats = int(ceil(100.0 / (ms/5)));
+    for(int _ = 0; _ < warm_up; _++){
+        funcc(q_ptr,k_ptr,v_ptr,decay_ptr,o_ptr,B,H,dim_qk,dim_v,Seq_k,block_dimqk);
+    }
+
+    std::vector<cudaEvent_t> start_(repeats);
+    std::vector<cudaEvent_t> stop_(repeats);
+    for(int ii = 0; ii < repeats; ii++){
+        cudaEventCreate(&start_[ii]);
+        cudaEventCreate(&stop_[ii]);
+    }
+    for(int ii = 0; ii < repeats; ii++){
+        thrust::fill(cache.begin(), cache.end(), ii);
+        cudaEventRecord(start_[ii], 0);
+        funcc(q_ptr,k_ptr,v_ptr,decay_ptr,o_ptr,B,H,dim_qk,dim_v,Seq_k,block_dimqk);
+        cudaEventRecord(stop_[ii], 0);
+    }
+    if(cudaEventSynchronize(stop_[repeats-1]) != cudaSuccess) return -1;
+    if(cudaGetLastError() != cudaSuccess) {
+        printf("CUDA error: %s\n", cudaGetErrorString(cudaGetLastError()));
+        return -1;
+    }
+    ms = 0;
+    for(int ii = 0; ii < repeats; ii++){
+        float tmp;
+        cudaEventElapsedTime(&tmp, start_[ii], stop_[ii]);
+        ms += tmp;
+    }
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop); 
+    for(int ii = 0; ii < repeats; ii++){
+        cudaEventDestroy(start_[ii]);
+        cudaEventDestroy(stop_[ii]);
+    }
+    return ms / repeats;
+
+}
 int main(){
     ProblemShape PS(4,8,2048,2048);
     using InpleConfig = ImplementShape<128,64,256,256,256>;
@@ -283,7 +372,9 @@ int main(){
     ms = test_smemfuse_retnet<ImplementShape<64,64,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
-
+    recurrentShape PS2(8,32,2048,2048,128,128);
+    ms = test_recurrent_retnet(PS2);
+    std::cout << "Time: " << ms << "ms" << std::endl;
 
     return 0;
 }
