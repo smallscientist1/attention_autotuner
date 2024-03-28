@@ -1,6 +1,10 @@
 # attention_autotuner
 an autotuner for attention
 
+## buld
+```
+cmake -DPROJECT_CUDA_ARCH="80"
+```
 ## TODO
 - chunkwise retnet
 - cost model
