@@ -60,7 +60,7 @@ class BaseConfig:
             return "Config(fuse_type={}, Br={}, Bc={}, BlockKSmem={}, BlockKSmem2={}, num_stages_qk={}, num_stages_v={}, Nthreads={}, unrollLastIter={},warps_mma1_n={},warp_mma_n={})".format(self.fuse_type, self.Br, self.Bc, self.BlockKSmem, self.BlockKSmem2, self.num_stages_qk, self.num_stages_v, self.Nthreads, self.unrollLastIter, self.warps_mma1_n, self.warps_mma_n)
 
     def __str__(self) -> str:
-        if self.fuse_type == "regsiter":
+        if self.fuse_type == "register":
             return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}"
         else:
             return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}_{self.warps_mma1_n}_{self.warps_mma_n}"
