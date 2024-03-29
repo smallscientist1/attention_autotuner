@@ -76,6 +76,7 @@ class Runtime:
         
 
 if __name__ == "__main__":
+    torch.manual_seed(0)
     b = 4
     h = 4
     seq_q = 2048
@@ -93,3 +94,9 @@ if __name__ == "__main__":
     from arch import A100
     Runtime(A100(), cc,tmp_dir="../tmp/attn").apply([q, k, v, o])
 
+    import torch.nn.functional as F
+    softmax_scale = 0.125
+    attn = q @ k.transpose(-1, -2)
+    o_ref = F.softmax(attn * softmax_scale, dim=-1) @ v
+
+    torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
