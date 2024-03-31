@@ -164,6 +164,6 @@ class AttnTunner(BaseTunner):
                         configs.append(config1)
                         config2 = AttnConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_v,Nthreads,unrollLastIter)
                         config2.set_fuse_type("shared")
-                        # configs.append(config2)
+                        configs.append(config2)
         return configs
 
