@@ -118,6 +118,11 @@ if __name__ == "__main__":
     cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_mask=1, num_stages_v=1, Nthreads=256, unrollLastIter=0)
     cc.set_fuse_type("register")
 
+    # cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_mask=1, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+    # result error!
+    cc = RetConfig(Br=64, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=64, num_stages_qk=2, BlockKSmem2=32, num_stages_v=2, num_stages_mask=1, Nthreads=256)
+    cc.set_fuse_type("shared")
+
     Runtime(A100(), cc,tmp_dir="../tmp/ret").apply([q, k, v, mask, o])
 
     import torch.nn.functional as F

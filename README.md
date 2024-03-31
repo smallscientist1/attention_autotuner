@@ -8,7 +8,7 @@ cmake -DPROJECT_CUDA_ARCH="80"
 ## TODO
 - chunkwise retnet
 - cost model
-- autotuner
+- autotuner(more general policy for retnet)
 - elementwise op
 - attention backward
 - retnet performance issue(load q once?)
