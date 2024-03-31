@@ -11,6 +11,7 @@ constexpr bool unrollLastIter = {unrollLastIter};
 // for q&k splitk
 constexpr int BlockKSmem = {BlockKSmem};
 constexpr int num_stages_qk = {num_stages_qk};
+constexpr bool load_q_once = (BlockKSmem == Kd);
 constexpr int num_stages_mask = {num_stages_mask};
 // for V splitk
 constexpr int BlockKSmem2 = {BlockKSmem2};
@@ -48,7 +49,7 @@ constexpr int shared_mem = (shared_matmulqkv + shared_accs + shared_mask) > shar
 profile_func = \
 """
 extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Parameter_2_0_0, half* Parameter_3_0_0,half* Result_7_0_0,int B,int H, int Seq_q, int Seq_k){{
-    auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
+    auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
     if(shared_mem > 48*1024){{
         cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
     }}
@@ -87,7 +88,7 @@ kernel_entry = \
 """
 extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, int B, int H, int Seq_k,int Seq_q)
 {{
-    auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
+    auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
   if(shared_mem > 48*1024){{
     cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
   }}

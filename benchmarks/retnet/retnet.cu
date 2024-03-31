@@ -183,7 +183,7 @@ float test_smemfuse_retnet(ProblemShape shape){
     int shared_out = br * d * sizeof(half);
     int shared_mem = (shared_matmulqkv+shared_accs+shared_mask) > shared_out ? (shared_matmulqkv+shared_accs+shared_mask):shared_out;//(acc_o(p(q,k),v))
 
-    auto kernel = &ret_fwd_smemfuse<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk/*,load_q_once*/,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle,SmemKAtomV,kSwizzleV, SmemKAtomMask, kSwizzleMask,SmemKAtomP,kSwizzleP,SmemKAtomPf16,kSwizzlePf16,unrollLastIter>;
+    auto kernel = &ret_fwd_smemfuse<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle,SmemKAtomV,kSwizzleV, SmemKAtomMask, kSwizzleMask,SmemKAtomP,kSwizzleP,SmemKAtomPf16,kSwizzlePf16,unrollLastIter>;
     if(shared_mem > 48*1024){
         cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
     }

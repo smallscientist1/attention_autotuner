@@ -59,7 +59,7 @@ constexpr int Nthreads = 256;
 
 
 
-template<int Kd, int D, int Br, int Bc, int Nthreads, int BlockKSmem=Kd, int num_stages_qk=1,int BlockKSmem2=Bc,int num_stages_v=1,int num_stages_mask=1,int warps_mma1_N=2, int warps_mma_N=4,int SmemKAtom=64,int kSwizzle=3,int SmemKAtomV=64, int kSwizzleV=3,int SmemKAtomMask=64,int kSwizzleMask=3,int SmemKAtomP=64,int kSwizzleP=3,int SmemKAtomPf16=64, int kSwizzlePf16=3,bool unrollLastIter=true>
+template<int Kd, int D, int Br, int Bc, int Nthreads, int BlockKSmem=Kd, int num_stages_qk=1,bool load_q_once=true,int BlockKSmem2=Bc,int num_stages_v=1,int num_stages_mask=1,int warps_mma1_N=2, int warps_mma_N=4,int SmemKAtom=64,int kSwizzle=3,int SmemKAtomV=64, int kSwizzleV=3,int SmemKAtomMask=64,int kSwizzleMask=3,int SmemKAtomP=64,int kSwizzleP=3,int SmemKAtomPf16=64, int kSwizzlePf16=3,bool unrollLastIter=true>
 __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
 
     extern __shared__ char shared[];
@@ -337,6 +337,9 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0
                       gK1_partition, sK1_partition,
                       BlockKSmem, size(sQ1),
                       BlockKSmem, size(sK1),num_stages_qk);
+    CopyAsyncV_g2s cp_g2s_k(gmem_tiled_copy_QKV,
+                      gK1_partition, sK1_partition,
+                      BlockKSmem, size(sK1),num_stages_qk);        
     CopyAsyncV_g2s cp_g2s_v(gmem_tiled_copy_V, 
                       gV1_partition, sV1_partition, 
                       BlockKSmem2*D, size(sV1),num_stages_v);
@@ -471,9 +474,13 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0
      cp_async_wait_flash<0>();
     __syncthreads();
     if(i < iters-1){
-    gK1_partition.data() = gK1_partition.data() + (-Kd) + Bc*Kd;
-    gQ1_partition.data() = gQ1_partition.data() + (-Kd);
-    cp_g2s_qk.prologue();
+      gK1_partition.data() = gK1_partition.data() + (-Kd) + Bc*Kd;
+      if(load_q_once){
+        cp_g2s_k.prologue();
+      }else{
+        gQ1_partition.data() = gQ1_partition.data() + (-Kd);
+        cp_g2s_qk.prologue();
+      }
     }
     // matmul_v_s2r.epilogue(rP_Aregs);
     matmul_v_s2r.epilogue();
