@@ -88,10 +88,16 @@ if __name__ == "__main__":
     v = torch.randn([b, h, seq_kv, D], device="cuda:0", dtype=torch.float16)
     o = torch.zeros([b, h, seq_q, D], device="cuda:0", dtype=torch.float16)
     from config import AttnConfig
-    cc = AttnConfig(Br=128, Bc=64, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=64, num_stages_v=1, Nthreads=256)
-    cc.set_fuse_type("register")
-
+    
     from arch import A100
+
+    cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
+    cc.set_fuse_type("register")
+    # cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
+    # result error!
+    cc = AttnConfig(Br=64, Bc=64, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=64, num_stages_v=1, Nthreads=256)
+    cc.set_fuse_type("shared")
+
     Runtime(A100(), cc,tmp_dir="../tmp/attn").apply([q, k, v, o])
 
     import torch.nn.functional as F
