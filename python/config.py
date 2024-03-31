@@ -70,7 +70,7 @@ class RetConfig(BaseConfig):
         super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
         self.num_stages_mask = num_stages_mask # [1]
         self.operation = "ret"
-        self.template_dir = "template/flash_kernels/retnet"
+        self.template_dir = "../csrc/kernels/retnet"
     
     def __repr__(self) -> str:
         if self.fuse_type == "register":
