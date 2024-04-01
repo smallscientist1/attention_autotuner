@@ -273,14 +273,14 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_regfuse(half* Parameter_0_0_
       cp_g2s_qk.body();
       matmul_qk_s2r.body();
     }
-     cp_async_wait_flash<0>();
-    __syncthreads();
     cp_g2s_mask.prologue();
+    cp_g2s_v.prologue();
+     cp_async_wait_flash<2>();
+    __syncthreads();
     matmul_qk_s2r.epilogue();
 
-    cp_async_wait_flash<0>();
+    cp_async_wait_flash<1>();
     __syncthreads();
-    cp_g2s_v.prologue();
     
     // qk*m
     multiply_mask(smem_tiled_copy_mask, sMask_copypartition, rMask_copy_view, acc_s_fragment, rMask);
