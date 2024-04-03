@@ -89,7 +89,7 @@ if __name__ == "__main__":
     mask = torch.randn([h, seq_q, seq_kv], device="cuda:0", dtype=torch.float16)
     o = torch.zeros([b, h, seq_q, D], device="cuda:0", dtype=torch.float16)
     
-    from arch import A100
+    from arch import A100, RTX4090
     '''
     from config import AttnConfig
 
@@ -112,6 +112,7 @@ if __name__ == "__main__":
     torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
     '''
 
+    '''
     from config import RetConfig
     # cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_mask=1, num_stages_v=2, Nthreads=256, unrollLastIter=1)
     # result error!
@@ -132,3 +133,20 @@ if __name__ == "__main__":
     o_ref = (qkm/r) @ v
 
     torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
+    '''
+
+    # '''
+    from config import AttnConfig
+
+    cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=0, BlockKSmem=64, num_stages_qk=2, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
+    cc.set_fuse_type("register")
+
+    Runtime(RTX4090(), cc,tmp_dir="../tmp/attn").apply([q, k, v, o])
+
+    import torch.nn.functional as F
+    softmax_scale = 0.125
+    attn = q @ k.transpose(-1, -2)
+    o_ref = F.softmax(attn * softmax_scale, dim=-1) @ v
+
+    torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
+    # '''
