@@ -357,16 +357,16 @@ int main(){
     float ms = test_regfuse_retnet<InpleConfig>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
-    // ms = test_regfuse_retnet<ImplementShape<128,128,256,256,256,1,1,64,2,128,1,64,false,64>>(PS);
-    // std::cout << "Time: " << ms << "ms" << std::endl;
+    ms = test_regfuse_retnet<ImplementShape<128,128,256,256,256,1,1,64,2,128,1,false>>(PS);
+    std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_regfuse_retnet<ImplementShape<128,64,64,64,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_regfuse_retnet<ImplementShape<128,64,256,64,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_regfuse_retnet<ImplementShape<128,128,64,64,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
-    ms = test_regfuse_retnet<ImplementShape<128,64,256,128,256>>(PS);
-    std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_regfuse_retnet<ImplementShape<128,64,256,128,256>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
 
 
     ms = test_smemfuse_retnet<ImplementShape<64,64,256,256,256,2,4>>(PS);
