@@ -1,8 +1,8 @@
 // nvcc -std=c++17 -lineinfo -O3 -Xptxas=-v --use_fast_math --expt-relaxed-constexpr --disable-warnings --compiler-options '-fPIC' --shared scan_cpasync.cu -lcuda -gencode=arch=compute_80,code=sm_80 -o scan_cpasync.so -I /home/v-feiychen/flashfusion/cutlass_cute/include
 #define CUB_STDERR
 
-#include <stdio.h>
-#include <iostream>
+// #include <stdio.h>
+// #include <iostream>
 #include <algorithm>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
@@ -232,7 +232,7 @@ __global__ void scan_fwd_kernel( Params params
 
     data_t data_decay[ITEMS_PER_THREAD];
     for (int chunk = 0; chunk < params.nchunk; chunk++) {
-        Ktrait::BlockLoadT(smem_load).Load(decay, data_decay);//, params.l - chunk * params.chunk_size, 0.0f);
+        typename Ktrait::BlockLoadT(smem_load).Load(decay, data_decay);//, params.l - chunk * params.chunk_size, 0.0f);
 
         data_t v_data[kNvdim][ITEMS_PER_THREAD];
         data_t out_data[kNvdim][ITEMS_PER_THREAD];
@@ -244,7 +244,7 @@ __global__ void scan_fwd_kernel( Params params
         }
         #pragma unroll
         for(int ii = 0; ii < kNvdim; ii++){
-            Ktrait::BlockLoadT(smem_load).Load(vptr, v_data[ii]);//, params.l - chunk * params.chunk_size, 0.0f);
+            typename Ktrait::BlockLoadT(smem_load).Load(vptr, v_data[ii]);//, params.l - chunk * params.chunk_size, 0.0f);
             vptr += params.l;
             // __syncthreads();
         }
@@ -307,7 +307,7 @@ __global__ void scan_fwd_kernel( Params params
                 scan_t running_prefix;
                 running_prefix =  chunk > 0 && threadIdx.x == 0? smem_running_prefix[k*kNvdim+v] : make_float2(0.f, 0.f);  
                 BlockPrefixCallbackOp prefix_op(running_prefix);
-                Ktrait::BlockScanT(smem_scan).InclusiveScan(thread_data, thread_data, ScanOp(), prefix_op);
+                typename Ktrait::BlockScanT(smem_scan).InclusiveScan(thread_data, thread_data, ScanOp(), prefix_op);
                 for (int i = 0; i < ITEMS_PER_THREAD; i++) {
                     thread_out_data[v][i] = thread_data[i].y;
                 }
@@ -351,7 +351,7 @@ __global__ void scan_fwd_kernel( Params params
                 scan_t running_prefix;
                 running_prefix =  chunk > 0 && threadIdx.x == 0? smem_running_prefix[(params.block_kdim-1)*kNvdim+v] : make_float2(0.f, 0.f);  
                 BlockPrefixCallbackOp prefix_op(running_prefix);
-                Ktrait::BlockScanT(smem_scan).InclusiveScan(thread_data, thread_data, ScanOp(), prefix_op);
+                typename Ktrait::BlockScanT(smem_scan).InclusiveScan(thread_data, thread_data, ScanOp(), prefix_op);
                 for (int i = 0; i < ITEMS_PER_THREAD; i++) {
                     thread_out_data[v][i] = thread_data[i].y;
                 }
@@ -375,7 +375,7 @@ __global__ void scan_fwd_kernel( Params params
         __syncthreads();
         #pragma unroll
         for(int ii = 0; ii < kNvdim; ii++){
-            Ktrait::BlockStoreT(smem_store).Store(out, out_data[ii]);
+            typename Ktrait::BlockStoreT(smem_store).Store(out, out_data[ii]);
             out += params.l;
             // __syncthreads();
         }
