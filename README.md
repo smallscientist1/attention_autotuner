@@ -1,6 +1,25 @@
 # attention_autotuner
 an autotuner for attention
 
+## attention algo
+### flash attention
+- q @ k
+- reduce_max(qk)
+- scale = exp(m_old-m_new)
+- lse* scale
+- acco * scale
+- accs * exp(accs-m_new)
+- lse = reduce_sum(accs)
+
+### retnet parallel
+- q @ k
+- qk * mask
+- reduce_abs(qk)
+- clamp(r)
+- scale = r_old/r_new
+- acco * scale
+- accs / r_new
+
 ## build
 - clone the repo and submodule
 ```
