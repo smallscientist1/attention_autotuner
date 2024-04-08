@@ -15,4 +15,5 @@ int main(){
     deviceProp.memoryBusWidth);
     printf("cuda capability Major/Minor: %d.%d\n",deviceProp.major,deviceProp.minor);
     printf("register per block: %d\n", deviceProp.regsPerBlock);
+    printf("L2 cache size: %d bytes\n",deviceProp.l2CacheSize);
 }
