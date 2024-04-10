@@ -264,7 +264,7 @@ int main(){
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 
-    ms = test_smemfuse_attention<ImplementShape<64,64,256,256,256,2,4>>(PS);
+    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 

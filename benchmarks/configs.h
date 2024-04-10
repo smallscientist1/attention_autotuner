@@ -24,6 +24,26 @@ public:
 };
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+/*smem_fuse only*/ int warps_mma1_N_, int warps_mma_N_, 
+int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, bool unrollLastIter_=true>
+class ImplementShapeAttnSharedFwd: public ImplementShapeBase<Br_, Bc_, Kd_, D_, Nthreads_, BlockKSmem_, num_stages_qk_, unrollLastIter_>{
+public:
+    constexpr static int BlockKSmem2 = BlockKSmem2_;
+    constexpr static int num_stages_v = num_stages_v_;
+
+    /*smem_fuse*/
+    constexpr static int SmemKAtomV = D_ % 64 == 0 ? 64 : 32;
+    constexpr static int kSwizzleV = SmemKAtomV == 32 ? 2 : 3;
+    constexpr static int SmemKAtomP = Bc_ % 64 == 0 ? 64 : 32;
+    constexpr static int kSwizzleP = SmemKAtomP == 32 ? 2 : 3;
+    constexpr static int SmemKAtomPf16 = 64;
+    constexpr static int kSwizzlePf16 = SmemKAtomPf16 == 32 ? 2 : 3;
+    constexpr static int warps_mma1_N = warps_mma1_N_;
+    constexpr static int warps_mma_N = warps_mma_N_;
+};
+
+
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
 /*smem_fuse only*/ int warps_mma1_N_ = 1, int warps_mma_N_ = 1, 
 int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, bool unrollLastIter_=true,
 /*retnet*/int num_stages_mask_ = 1>
