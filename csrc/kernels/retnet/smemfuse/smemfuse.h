@@ -60,7 +60,7 @@ constexpr int Nthreads = 256;
 
 
 template<int Kd, int D, int Br, int Bc, int Nthreads, int BlockKSmem=Kd, int num_stages_qk=1,bool load_q_once=true,int BlockKSmem2=Bc,int num_stages_v=1,int num_stages_mask=1,int warps_mma1_N=2, int warps_mma_N=4,int SmemKAtom=64,int kSwizzle=3,int SmemKAtomV=64, int kSwizzleV=3,int SmemKAtomMask=64,int kSwizzleMask=3,int SmemKAtomP=64,int kSwizzleP=3,int SmemKAtomPf16=64, int kSwizzlePf16=3,bool unrollLastIter=true>
-__global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, int H, int seq_k, int seq_q){
+__global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, float* r, int H, int seq_k, int seq_q){
 
     extern __shared__ char shared[];
 
@@ -77,6 +77,7 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0
     int q_offset = (int)blockIdx.x  * Kd * Br;
     int mask_offset = ((int)blockIdx.x%(Tr * H)) * Br * seq_k;
     int o_offset = (int)blockIdx.x  * D * Br;
+    int lse_offset = (int)blockIdx.x * Br;
 
     constexpr int sMask_offset = 0;
     constexpr int r_new = sMask_offset + num_stages_mask * Br * Bc*sizeof(half);
@@ -616,6 +617,16 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0
       #pragma unroll
       for (int k=0;k< size<2>(gO_partition);++k){
         cute::copy(gmem_tiled_copy_O, sO_partition(_, m, k), gO_partition(_, m, k));
+      }
+    }
+
+    // r -> gR
+    Tensor gR = make_tensor(make_gmem_ptr(r+lse_offset), Shape<Int<Br>>{}, make_stride(_1{}));
+    if(threadIdx.x%nthreadsPerRow==0){
+      #pragma unroll
+      for(int ax0 = 0;ax0 < size<0>(r_new_fragment);ax0++){
+        // here causion!
+        gR(threadIdx.x/nthreadsPerRow + ax0*(Nthreads/nthreadsPerRow)) = r_new_fragment(ax0);
       }
     }
 

@@ -48,7 +48,7 @@ constexpr int shared_mem = (shared_matmulqkv + shared_accs + shared_mask) > shar
 
 profile_func = \
 """
-extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Parameter_2_0_0, half* Parameter_3_0_0,half* Result_7_0_0,int B,int H, int Seq_q, int Seq_k){{
+extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Parameter_2_0_0, half* Parameter_3_0_0,half* Result_7_0_0,float* r,int B,int H, int Seq_q, int Seq_k){{
     auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
     if(shared_mem > 48*1024){{
         cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
@@ -59,7 +59,7 @@ extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Param
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
-    kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0, H,Seq_k,Seq_q);
+    kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0,r, H,Seq_k,Seq_q);
     if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
     if(cudaGetLastError() != cudaSuccess) {{
@@ -70,7 +70,7 @@ extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Param
     int repeats = int(ceil(100.0 / ms));
     cudaEventRecord(start, 0);
     for(int _ = 0; _ < repeats; _++){{
-        kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0, H,Seq_k,Seq_q);
+        kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0,r, H,Seq_k,Seq_q);
     }}
     if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
     if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
@@ -86,13 +86,13 @@ extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Param
 """
 kernel_entry = \
 """
-extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, int B, int H, int Seq_k,int Seq_q)
+extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, float* r, int B, int H, int Seq_k,int Seq_q)
 {{
     auto kernel = &ret_fwd_smemfuse<Kd,D,Br,Bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,num_stages_mask,warps_mma1_N,warps_mma_N,SmemKAtom,kSwizzle, SmemKAtomV,kSwizzleV ,SmemKAtomMask,kSwizzleMask, SmemKAtomP, kSwizzleP, SmemKAtomPf16, kSwizzlePf16,unrollLastIter>;
   if(shared_mem > 48*1024){{
     cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
   }}
-    kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0, H,Seq_k,Seq_q);
+    kernel<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0,r, H,Seq_k,Seq_q);
     return 0;
 }}
 """
