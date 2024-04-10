@@ -184,8 +184,9 @@ class FlashRetAttention(nn.Module):
 
 
 output = torch.zeros([batch, nheads, seqlen_q, dim_v], dtype=dtype, device='cuda:0')
+r = torch.zeros([batch, nheads, seqlen_q], dtype=torch.float32, device='cuda:0')
 if args.operation == "retnet":
-    tunner = RetTunner(arch=arch.__getattribute__(args.arch)(), torch_array=[query, key, value, mask, output])
+    tunner = RetTunner(arch=arch.__getattribute__(args.arch)(), torch_array=[query, key, value, mask, output,r])
 elif args.operation == "attn":
     tunner = AttnTunner(arch=arch.__getattribute__(args.arch)(), torch_array=[query, key, value, output])
 tunner.tune()
