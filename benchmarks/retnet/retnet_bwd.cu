@@ -187,7 +187,7 @@ float test_retnet_bwd(ProblemShape shape){
 
 int main(){
     ProblemShape PS(4,8,2048,2048);
-    using InpleConfig = ImplementShapeBwd<64,64,256,256,256,2,4,4,4>;
+    using InpleConfig = ImplementShapeRetBwd<64,64,256,256,256,2,4,4,4>;
     float ms = test_retnet_bwd<InpleConfig>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
