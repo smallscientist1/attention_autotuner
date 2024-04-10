@@ -1,4 +1,29 @@
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+int BlockKSmem_=Kd_, int num_stages_qk_=1, bool unrollLastIter_=true>
+class ImplementShapeBase{
+public:
+    constexpr static int Br = Br_;
+    constexpr static int Bc = Bc_;
+    constexpr static int Kd = Kd_;
+    constexpr static int D = D_;
+    constexpr static int Nthreads = Nthreads_;
+    constexpr static int BlockKSmem = BlockKSmem_;
+    constexpr static int num_stages_qk = num_stages_qk_;
+    constexpr static bool load_q_once = (BlockKSmem == Kd);
+    constexpr static int SmemKAtom = BlockKSmem % 64 == 0 ? 64 : 32;
+    constexpr static int kSwizzle = SmemKAtom == 32 ? 2 : 3;
+    constexpr static bool unrollLastIter = unrollLastIter_;
+};
+
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, bool unrollLastIter_=true>
+class ImplementShapeAttnRegFwd: public ImplementShapeBase<Br_, Bc_, Kd_, D_, Nthreads_, BlockKSmem_, num_stages_qk_, unrollLastIter_>{
+public:
+    constexpr static int BlockKSmem2 = BlockKSmem2_;
+    constexpr static int num_stages_v = num_stages_v_;
+};
+
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
 /*smem_fuse only*/ int warps_mma1_N_ = 1, int warps_mma_N_ = 1, 
 int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, bool unrollLastIter_=true,
 /*retnet*/int num_stages_mask_ = 1>
