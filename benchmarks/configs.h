@@ -34,6 +34,31 @@ public:
     constexpr static int num_stages_mask = num_stages_mask_;
 };
 
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+/*retnet_bwd*/ int mmawarpsN_, int mmawarpsN_dv_, int mmawarpsN_dk_, int mmawarpsN_dq_,
+int BlockKSmem_=Kd_, int num_stages_qk_=1, bool unrollLastIter_=true,
+/*retnet*/int num_stages_mask_ = 1, 
+/*retnet_bwd*/int num_stages_dv_ = 1, int num_stages_ds_ = 1, int num_stages_dq_=1>
+class ImplementShapeBwd: public ImplementShape<Br_, Bc_, Kd_, D_, Nthreads_,1,1, BlockKSmem_, num_stages_qk_,1,1, unrollLastIter_, num_stages_mask_>{
+public:
+    constexpr static int mmawarpsN = mmawarpsN_;
+    constexpr static int mmawarpsN_dv = mmawarpsN_dv_;
+    constexpr static int mmawarpsN_dk = mmawarpsN_dk_;
+    constexpr static int mmawarpsN_dq = mmawarpsN_dq_;
+    constexpr static int num_stages_dv = num_stages_dv_;
+    constexpr static int num_stages_ds = num_stages_ds_;
+    constexpr static int num_stages_dq = num_stages_dq_;
+
+    constexpr static int SmemKAtomO = 64;
+    constexpr static int kSwizzleO = SmemKAtomO == 32 ? 2 : 3;
+    constexpr static int SmemKAtomV = 64;
+    constexpr static int kSwizzleV = SmemKAtomV == 32 ? 2 : 3;
+    constexpr static int SmemKAtom = 64;
+    constexpr static int kSwizzle = SmemKAtom == 32 ? 2 : 3;
+    constexpr static int SmemKAtomS = 64;
+    constexpr static int kSwizzleS = SmemKAtomS == 32 ? 2 : 3;
+};
+
 class ProblemShape{
 public:
     ProblemShape(int batch,int head,int seqlen_q,int seqlen_kv):B(batch),H(head),Seq_q(seqlen_q),Seq_k(seqlen_kv){};

@@ -46,3 +46,11 @@ target_link_libraries(retnet
 target_compile_options(retnet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
 # set_property(TARGET retnet PROPERTY CUDA_ARCHITECTURES 80)
 # set_property(TARGET retnet PROPERTY CUDA_ARCHITECTURES native)
+
+add_executable(retnet_bwd retnet_bwd.cu)
+target_link_libraries(retnet_bwd
+    ${CUDA_LIBRARIES}
+    # ${TORCH_LIBRARIES}
+    # ${CUDA_CUBLAS_LIBRARIES}
+)
+target_compile_options(retnet_bwd PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)

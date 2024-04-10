@@ -39,7 +39,8 @@ cmake -DPROJECT_CUDA_ARCH="80" ..
 - autotuner(more general policy for retnet)
 - elementwise op
 - attention backward
-- retnet performance issue(added load q once)
+- retnet performance issue(added load q once, mask stage 2?)
 - causal config
 - retnet parallel scan version seqlen_q != seqlen_kv
 - retnet parallel scan template
+- retnet bwd load_q_once,causal

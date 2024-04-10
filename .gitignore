@@ -3,3 +3,4 @@
 **/build/
 logs/
 *.ncu-rep
+**/.cache/
