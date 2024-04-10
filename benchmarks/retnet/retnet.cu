@@ -369,7 +369,7 @@ int main(){
     // std::cout << "Time: " << ms << "ms" << std::endl;
 
 
-    ms = test_smemfuse_retnet<ImplementShape<64,64,256,256,256,2,4>>(PS);
+    ms = test_smemfuse_retnet<ImplementShapeRetSharedFwd<64,64,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
     recurrentShape PS2(8,32,2048,2048,128,128);
