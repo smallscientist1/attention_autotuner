@@ -52,9 +52,7 @@ float test_regfuse_attention(ProblemShape shape){
     int Seq_q = shape.Seq_q;
     int Seq_k = shape.Seq_k;
 
-    int shared_matmulqkv = num_stages_qk*(br)*BlockKSmem*sizeof(half)+num_stages_qk*bc*BlockKSmem*sizeof(half)+num_stages_v*BlockKSmem2* d* sizeof(half);
-    int shared_out = br * d * sizeof(half);
-    int shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
+    int shared_mem = InplementConfig().shared_mem;
 
     auto kernel = &flashattn_fwd_regfuse<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,SmemKAtom,kSwizzle,unrollLastIter>;
     if(shared_mem > 48*1024){
@@ -164,10 +162,7 @@ float test_smemfuse_attention(ProblemShape shape){
     int Seq_q = shape.Seq_q;
     int Seq_k = shape.Seq_k;
 
-    int shared_matmulqkv = num_stages_qk*(br)*BlockKSmem*sizeof(half)+num_stages_qk*bc*BlockKSmem*sizeof(half)+num_stages_v*BlockKSmem2* d* sizeof(half);
-    int shared_accs = br*bc*sizeof(float)+br*bc*sizeof(half) + 3*sizeof(float)*br;
-    int shared_out = br * d * sizeof(half);
-    int shared_mem = (shared_matmulqkv+shared_accs) > shared_out ? (shared_matmulqkv+shared_accs):shared_out;//(acc_o(p(q,k),v))
+    int shared_mem = InplementConfig().shared_mem;
 
     auto kernel = &flashattn_fwd_smemfuse<kd,d,br,bc,Nthreads,BlockKSmem,num_stages_qk,load_q_once,BlockKSmem2,num_stages_v,SmemKAtom,kSwizzle,SmemKAtomV,kSwizzleV,SmemKAtomP,kSwizzleP,SmemKAtomPf16,kSwizzlePf16,warps_mma1_N,warps_mma_N,unrollLastIter>;
     if(shared_mem > 48*1024){

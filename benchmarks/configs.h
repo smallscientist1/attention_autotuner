@@ -1,3 +1,5 @@
+#include <cuda_fp16.h>
+
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
 int BlockKSmem_=Kd_, int num_stages_qk_=1, bool unrollLastIter_=true>
 class ImplementShapeBase{
@@ -13,6 +15,8 @@ public:
     constexpr static int SmemKAtom = BlockKSmem % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzle = SmemKAtom == 32 ? 2 : 3;
     constexpr static bool unrollLastIter = unrollLastIter_;
+
+    int shared_mem = 0;
 };
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
@@ -21,6 +25,12 @@ class ImplementShapeAttnRegFwd: public ImplementShapeBase<Br_, Bc_, Kd_, D_, Nth
 public:
     constexpr static int BlockKSmem2 = BlockKSmem2_;
     constexpr static int num_stages_v = num_stages_v_;
+
+    ImplementShapeAttnRegFwd(){
+        int shared_matmulqkv = num_stages_qk_*(Br_)*BlockKSmem_*sizeof(half)+num_stages_qk_*Bc_*BlockKSmem_*sizeof(half)+num_stages_v*BlockKSmem2* D_* sizeof(half);
+        int shared_out = Br_ * D_ * sizeof(half);
+        this->shared_mem = (shared_matmulqkv) > shared_out ? (shared_matmulqkv):shared_out;//(acc_o(p(q,k),v))
+    };
 };
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
@@ -40,6 +50,13 @@ public:
     constexpr static int kSwizzlePf16 = SmemKAtomPf16 == 32 ? 2 : 3;
     constexpr static int warps_mma1_N = warps_mma1_N_;
     constexpr static int warps_mma_N = warps_mma_N_;
+
+    ImplementShapeAttnSharedFwd(){
+        int shared_matmulqkv = num_stages_qk_*(Br_)*BlockKSmem_*sizeof(half)+num_stages_qk_*Bc_*BlockKSmem_*sizeof(half)+num_stages_v*BlockKSmem2* D_* sizeof(half);
+        int shared_accs = Br_*Bc_*sizeof(float)+Br_*Bc_*sizeof(half) + 3*sizeof(float)*Br_;
+        int shared_out = Br_ * D_ * sizeof(half);
+        this->shared_mem = (shared_matmulqkv+shared_accs) > shared_out ? (shared_matmulqkv+shared_accs):shared_out;//(acc_o(p(q,k),v))
+    };
 };
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
@@ -52,6 +69,13 @@ public:
     constexpr static int SmemKAtomMask = Bc_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
     constexpr static int num_stages_mask = num_stages_mask_;
+
+    ImplementShapeRetRegFwd(){
+        int shared_matmulqkv = num_stages_qk_*(Br_)*BlockKSmem_*sizeof(half)+num_stages_qk_*Bc_*BlockKSmem_*sizeof(half)+num_stages_v_*BlockKSmem2_* D_* sizeof(half);
+        int shared_mask = num_stages_mask*Br_*Bc_*sizeof(half);
+        int shared_out = Br_ * D_ * sizeof(half);
+        this->shared_mem = (shared_matmulqkv+shared_mask) > shared_out ? (shared_matmulqkv+shared_mask):shared_out;//(acc_o(p(q,k),v))
+    };
 };
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
@@ -64,6 +88,14 @@ public:
     constexpr static int SmemKAtomMask = Bc_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
     constexpr static int num_stages_mask = num_stages_mask_;
+
+    ImplementShapeRetSharedFwd(){
+        int shared_matmulqkv = num_stages_qk_*(Br_)*BlockKSmem_*sizeof(half)+num_stages_qk_*Bc_*BlockKSmem_*sizeof(half)+num_stages_v_*BlockKSmem2_* D_* sizeof(half);
+        int shared_mask = num_stages_mask*Br_*Bc_*sizeof(half);
+        int shared_accs = Br_*Bc_*sizeof(float)+Br_*Bc_*sizeof(half) + 3*sizeof(float)*Br_;
+        int shared_out = Br_ * D_ * sizeof(half);
+        this->shared_mem = (shared_matmulqkv+shared_mask+shared_accs) > shared_out ? (shared_matmulqkv+shared_mask+shared_accs):shared_out;//(acc_o(p(q,k),v))
+    };
 };
 
 
