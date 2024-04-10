@@ -42,6 +42,17 @@ public:
     constexpr static int warps_mma_N = warps_mma_N_;
 };
 
+template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
+int BlockKSmem_=Kd_, int num_stages_qk_=1, int BlockKSmem2_=Bc_, int num_stages_v_=1, bool unrollLastIter_=true,
+/*retnet*/int num_stages_mask_ = 1>
+class ImplementShapeRetRegFwd: public ImplementShapeAttnRegFwd<Br_, Bc_, Kd_, D_, Nthreads_, BlockKSmem_, num_stages_qk_, BlockKSmem2_, num_stages_v_, unrollLastIter_>{
+public:
+
+    /*retnet*/
+    constexpr static int SmemKAtomMask = Bc_ % 64 == 0 ? 64 : 32;
+    constexpr static int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
+    constexpr static int num_stages_mask = num_stages_mask_;
+};
 
 template<int Br_, int Bc_,int Kd_, int D_, int Nthreads_, 
 /*smem_fuse only*/ int warps_mma1_N_ = 1, int warps_mma_N_ = 1, 

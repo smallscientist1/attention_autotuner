@@ -353,11 +353,11 @@ float test_recurrent_retnet(recurrentShape shape){
 }
 int main(){
     ProblemShape PS(4,8,2048,2048);
-    using InpleConfig = ImplementShape<128,64,256,256,256>;
+    using InpleConfig = ImplementShapeRetRegFwd<128,64,256,256,256>;
     float ms = test_regfuse_retnet<InpleConfig>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
-    ms = test_regfuse_retnet<ImplementShape<128,128,256,256,256,1,1,64,2,128,1,false>>(PS);
+    ms = test_regfuse_retnet<ImplementShapeRetRegFwd<128,128,256,256,256,64,2,128,1,false>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_regfuse_retnet<ImplementShape<128,64,64,64,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
