@@ -1,0 +1,172 @@
+Config(fuse_type=shared, Br=32, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.335414171218872
+Config(fuse_type=shared, Br=32, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.3090896606445312
+Config(fuse_type=shared, Br=32, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.6255550384521484
+Config(fuse_type=shared, Br=32, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.6134178638458252
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.3210828304290771
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.3324834108352661
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=8)
+1.4983291625976562
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=8)
+1.4480843544006348
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.3822616338729858
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.4180352687835693
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=8)
+1.4262012243270874
+Config(fuse_type=shared, Br=32, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=8)
+1.4409164190292358
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=128, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=4)
+1.5751101970672607
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=128, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=4)
+1.5879597663879395
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=8)
+1.5830880403518677
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=8)
+1.6240144968032837
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=4)
+1.4322980642318726
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=4)
+1.4504588842391968
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=8)
+1.4687870740890503
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=8)
+1.4863131046295166
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=4)
+1.734055757522583
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=4)
+1.7763885259628296
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=8)
+1.756734848022461
+Config(fuse_type=shared, Br=32, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=8)
+1.7841005325317383
+Config(fuse_type=register, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+0.8713175058364868
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=1,warp_mma_n=4)
+1.0743353366851807
+Config(fuse_type=register, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+0.906593382358551
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=1,warp_mma_n=4)
+1.0748848915100098
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.1374404430389404
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.1457971334457397
+Config(fuse_type=register, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+1.2419296503067017
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=1,warp_mma_n=4)
+1.2663769721984863
+Config(fuse_type=register, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+1.3039846420288086
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=1,warp_mma_n=4)
+1.2795078754425049
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.95937180519104
+Config(fuse_type=shared, Br=64, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.9240368604660034
+Config(fuse_type=register, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+0.854473888874054
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.0148564577102661
+Config(fuse_type=register, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+0.9571474194526672
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.0191466808319092
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.0521115064620972
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.0868090391159058
+Config(fuse_type=register, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+0.915350079536438
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.402864694595337
+Config(fuse_type=register, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+0.9356712102890015
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.384876012802124
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.3262437582015991
+Config(fuse_type=shared, Br=64, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.3343528509140015
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=256, BlockKSmem2=128, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+14.272218704223633
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=256, BlockKSmem2=128, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+0.8663879036903381
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=128, unrollLastIter=1)
+0.9639084339141846
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=128, unrollLastIter=0)
+0.9518226385116577
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1)
+18.14364242553711
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+13.982463836669922
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0)
+1.0808864831924438
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.132020354270935
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=4)
+1.0482487678527832
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=4)
+1.039446234703064
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=1)
+0.8444505333900452
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.2327477931976318
+Config(fuse_type=register, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=0)
+0.8496659994125366
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=128, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.2722008228302002
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=1,warps_mma1_n=4,warp_mma_n=4)
+1.0873888731002808
+Config(fuse_type=shared, Br=64, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=0,warps_mma1_n=4,warp_mma_n=4)
+1.1286457777023315
+Config(fuse_type=register, Br=128, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1)
+0.9070932865142822
+Config(fuse_type=shared, Br=128, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=1,warp_mma_n=4)
+1.050351619720459
+Config(fuse_type=register, Br=128, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+0.9673817753791809
+Config(fuse_type=shared, Br=128, Bc=32, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=1,warp_mma_n=4)
+1.0940483808517456
+Config(fuse_type=register, Br=128, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1)
+1.3161541223526
+Config(fuse_type=shared, Br=128, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=1,warp_mma_n=4)
+1.392440915107727
+Config(fuse_type=register, Br=128, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+1.3904640674591064
+Config(fuse_type=shared, Br=128, Bc=32, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=1,warp_mma_n=4)
+1.4373157024383545
+Config(fuse_type=register, Br=128, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=1)
+0.776066780090332
+Config(fuse_type=register, Br=128, Bc=64, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+0.8702720403671265
+Config(fuse_type=register, Br=128, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1)
+0.9180864691734314
+Config(fuse_type=shared, Br=128, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1,warps_mma1_n=2,warp_mma_n=4)
+1.0292725563049316
+Config(fuse_type=register, Br=128, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+0.9720841646194458
+Config(fuse_type=shared, Br=128, Bc=64, BlockKSmem=64, BlockKSmem2=64, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0,warps_mma1_n=2,warp_mma_n=4)
+1.0338411331176758
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=256, unrollLastIter=1)
+0.7473590970039368
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=256, unrollLastIter=0)
+0.7803781032562256
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=1)
+20.817100524902344
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_v=1, Nthreads=256, unrollLastIter=0)
+0.7975552678108215
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=1)
+0.8515861630439758
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=64, BlockKSmem2=32, num_stages_qk=2, num_stages_v=2, Nthreads=256, unrollLastIter=0)
+0.8130976557731628
+
+best config: 
+Config(fuse_type=register, Br=128, Bc=128, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_v=2, Nthreads=256, unrollLastIter=1)
+0.7473590970039368
