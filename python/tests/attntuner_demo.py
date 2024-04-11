@@ -7,7 +7,7 @@ import argparse
 import torch.nn as nn
 import ctypes
 
-from tunner import RetTunner, AttnTunner
+from autotuner.tunner import RetTunner, AttnTunner
 import arch
 
 # torch.manual_seed(54)
@@ -189,7 +189,7 @@ if args.operation == "retnet":
     tunner = RetTunner(arch=arch.__getattribute__(args.arch)(), torch_array=[query, key, value, mask, output,r])
 elif args.operation == "attn":
     tunner = AttnTunner(arch=arch.__getattribute__(args.arch)(), torch_array=[query, key, value, output])
-tunner.tune()
+tunner.tune(log_path="../../logs/")
 
 
 torch_model = RetAttention() if args.operation == "retnet" else Attn()

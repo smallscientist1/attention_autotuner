@@ -7,7 +7,7 @@ import importlib.util
 
 import ctypes
 import torch
-from config import BaseConfig, supported_configs
+from .configs.config import BaseConfig, supported_configs
 
 import pprint
 import json
@@ -40,8 +40,8 @@ def _compile(config, arch, temp_dir:str, timeout: float = None):
     src = tempfile.NamedTemporaryFile(mode="w",suffix=".cu", delete=True, dir=temp_dir)
     lib_name = src.name.replace(".cu", ".so")
     compute_version = arch.compute_capability
-    cutlass_dir = os.path.join(os.path.dirname(__file__), "../third_party/cutlass/include")
-    csrc_dir = os.path.join(os.path.dirname(__file__), "../csrc")    
+    cutlass_dir = os.path.join(os.path.dirname(__file__), "../../third_party/cutlass/include")
+    csrc_dir = os.path.join(os.path.dirname(__file__), "../../csrc")    
     if config.fuse_type == "register":
         template_dir = os.path.join(config.template_dir , "regfuse/")
     elif config.fuse_type == "shared":
@@ -67,7 +67,7 @@ class BaseTunner:
         self.Bc_list = [32, 64, 128, 256]
 
         self.op_name = op_name
-        self.cache_path = os.path.join(os.path.dirname(__file__), "../cache/")
+        self.cache_path = os.path.join(os.path.dirname(__file__), "../../cache/")
         self.problem_key = {
             "dim_qk": torch_array[0].shape[-1],
             "dim_v": torch_array[2].shape[-1]

@@ -3,8 +3,8 @@ import ctypes
 import os
 import torch
 
-from base_tunner import CompileResult, BaseTunner
-from config import RetConfig, AttnConfig
+from .base_tunner import CompileResult, BaseTunner
+from .configs.config import RetConfig, AttnConfig
  
 
 
