@@ -44,3 +44,4 @@ cmake -DPROJECT_CUDA_ARCH="80" ..
 - retnet parallel scan version seqlen_q != seqlen_kv
 - retnet parallel scan template
 - retnet bwd load_q_once,causal
+- the performance of python interface?
