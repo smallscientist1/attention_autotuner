@@ -1,6 +1,7 @@
 **/__pycache__/
 /tmp
 **/build/
-logs/
+/logs/
 *.ncu-rep
 **/.cache/
+/cache/

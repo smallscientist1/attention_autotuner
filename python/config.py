@@ -67,6 +67,12 @@ class BaseConfig:
         else:
             return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}_{self.warps_mma1_n}_{self.warps_mma_n}"
         
+    @classmethod
+    def from_dict(cls, dd:dict):
+        cc = supported_configs[dd["operation"]].__new__(supported_configs[dd["operation"]])
+        cc.__dict__.update(dd)
+        return cc
+
 class RetConfig(BaseConfig):
     def __init__(self, Br, Bc, Kd, D, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_mask=1, num_stages_v=1, Nthreads=256, unrollLastIter:bool = True) -> None:
         super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
@@ -91,3 +97,8 @@ class AttnConfig(BaseConfig):
         super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
         self.operation = "attn"
         self.template_dir = os.path.join(os.path.dirname(__file__), "../csrc/kernels/attention")
+
+supported_configs = {
+    "attn": AttnConfig,
+    "ret": RetConfig
+}

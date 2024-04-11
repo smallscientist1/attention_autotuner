@@ -10,7 +10,8 @@ dtype = torch.float16
 device = torch.device("cuda")
 device_type = A100()
 
-CHECK_PYTORCH = True
+CHECK_PYTORCH = False
+torch.manual_seed(0)
 
 def benchmark_retnet(batch, heads, seqlen_q, seqlen_kv, dim_qk, dim_v):
     q = torch.randn(batch, heads, seqlen_q, dim_qk, device=device, dtype=dtype)

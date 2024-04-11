@@ -10,7 +10,7 @@ from config import RetConfig, AttnConfig
 
 class RetTunner(BaseTunner):
     def __init__(self, arch, torch_array: list):
-        super().__init__(arch, torch_array)
+        super().__init__(arch, torch_array, "retnet")
     
     # validate shared fuse
     def validate_shared_fuse(self, config):
@@ -88,7 +88,7 @@ class RetTunner(BaseTunner):
 
 class AttnTunner(BaseTunner):
     def __init__(self, arch, torch_array: list):
-        super().__init__(arch, torch_array)
+        super().__init__(arch, torch_array, "attention")
 
     # validate shared fuse
     def validate_shared_fuse(self, config):

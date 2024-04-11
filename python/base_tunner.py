@@ -7,9 +7,10 @@ import importlib.util
 
 import ctypes
 import torch
-from config import BaseConfig
+from config import BaseConfig, supported_configs
 
 import pprint
+import json
 
 
 
@@ -39,14 +40,15 @@ def _compile(config, arch, temp_dir:str, timeout: float = None):
     src = tempfile.NamedTemporaryFile(mode="w",suffix=".cu", delete=True, dir=temp_dir)
     lib_name = src.name.replace(".cu", ".so")
     compute_version = arch.compute_capability
-    cutlass_dir = os.path.expanduser("../third_party/cutlass/include")
+    cutlass_dir = os.path.join(os.path.dirname(__file__), "../third_party/cutlass/include")
+    csrc_dir = os.path.join(os.path.dirname(__file__), "../csrc")    
     if config.fuse_type == "register":
         template_dir = os.path.join(config.template_dir , "regfuse/")
     elif config.fuse_type == "shared":
         template_dir = os.path.join(config.template_dir , "smemfuse/")
     command = ["nvcc","-std=c++17","-O3","--use_fast_math","--expt-relaxed-constexpr","--disable-warnings", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
             f"-gencode=arch=compute_{compute_version},code=sm_{compute_version}",
-            f"-I{cutlass_dir}",f"-I{template_dir}",f"-I../csrc", "-o", lib_name]
+            f"-I{cutlass_dir}",f"-I{template_dir}",f"-I{csrc_dir}", "-o", lib_name]
     src.write(profiling_code)
     src.flush()
     try:
@@ -58,11 +60,18 @@ def _compile(config, arch, temp_dir:str, timeout: float = None):
     return CompileResult(config,lib_name)
 
 class BaseTunner:
-    def __init__(self, arch, torch_array: list):
+    def __init__(self, arch, torch_array: list, op_name):
         self.arch = arch
         self.torch_array = torch_array
         self.Br_list = [32, 64, 128, 256]
         self.Bc_list = [32, 64, 128, 256]
+
+        self.op_name = op_name
+        self.cache_path = os.path.join(os.path.dirname(__file__), "../cache/")
+        self.problem_key = {
+            "dim_qk": torch_array[0].shape[-1],
+            "dim_v": torch_array[2].shape[-1]
+        }
 
     def compile(self, configs:list, temp_dir:str, timeout: float = None):
         libs = []
@@ -95,9 +104,14 @@ class BaseTunner:
         return latency
     
     def tune(self, log_path="../logs/"):
-        torch_array = self.torch_array
-        dim_v = torch_array[2].shape[-1]
-        dim_qk = torch_array[0].shape[-1]
+        dim_qk = self.problem_key["dim_qk"]
+        dim_v = self.problem_key["dim_v"]
+
+        best_config = self.check_cache()
+        if best_config is not None:
+            # print("Best config found in cache: ")
+            # pprint.pprint(best_config)
+            return best_config
 
         configs = []
         for Br in self.Br_list:
@@ -152,7 +166,27 @@ class BaseTunner:
             f.write("best config: \n")
             f.write(repr(best_config)+"\n")
             f.write(str(latency)+"\n")
+
+        cache_path = self.cache_path
+        os.makedirs(cache_path,exist_ok=True)
+        with open(os.path.join(cache_path,"best_config_{}_{}_{}.json".format(self.op_name,dim_qk, dim_v)),"w") as f:
+            json.dump(best_config.__dict__,f)
+
         return best_config
+    
+    def check_cache(self):
+        cache_path = self.cache_path
+        op_name = self.op_name
+        dim_qk = self.problem_key["dim_qk"]
+        dim_v = self.problem_key["dim_v"]
+        if os.path.exists(os.path.join(cache_path, "best_config_{}_{}_{}.json".format(op_name,dim_qk, dim_v))):
+            with open(os.path.join(cache_path,"best_config_{}_{}_{}.json".format(op_name,dim_qk, dim_v)),"r") as f:
+                best_config_dict = json.load(f)
+            best_config = BaseConfig.from_dict(best_config_dict)
+            return best_config
+        
+        return None
+            
         
     def validate_shared_fuse(self, config):
         return False
