@@ -48,14 +48,15 @@ class Runtime:
             f.write(entry_code)
             f.flush()
         compute_version = self.arch.compute_capability
-        cutlass_dir = os.path.expanduser("../third_party/cutlass/include")
+        cutlass_dir = os.path.join(os.path.dirname(__file__), "../third_party/cutlass/include")
+        csrc_dir = os.path.join(os.path.dirname(__file__), "../csrc")
         if config.fuse_type == "register":
             template_dir = os.path.join(config.template_dir , "regfuse/")
         elif config.fuse_type == "shared":
             template_dir = os.path.join(config.template_dir , "smemfuse/")
         command = ["nvcc","-std=c++17","-O3","--use_fast_math","--expt-relaxed-constexpr","--disable-warnings", "--compiler-options", "'-fPIC'", "--shared", os.path.join(temp_dir, filename), "-lcuda",
             f"-gencode=arch=compute_{compute_version},code=sm_{compute_version}",
-            f"-I{cutlass_dir}",f"-I{template_dir}",f"-I../csrc", "-o", os.path.join(temp_dir, lib_name)]
+            f"-I{cutlass_dir}",f"-I{template_dir}",f"-I{csrc_dir}", "-o", os.path.join(temp_dir, lib_name)]
         try:
             ret = subprocess.run(command, timeout=timeout)
         except subprocess.TimeoutExpired:

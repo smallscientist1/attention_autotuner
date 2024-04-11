@@ -1,3 +1,5 @@
+import os
+
 def find_factors(n:int):
     factors = []
     for i in range(1,n+1):
@@ -70,7 +72,7 @@ class RetConfig(BaseConfig):
         super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
         self.num_stages_mask = num_stages_mask # [1]
         self.operation = "ret"
-        self.template_dir = "../csrc/kernels/retnet"
+        self.template_dir = os.path.join(os.path.dirname(__file__), "../csrc/kernels/retnet")
     
     def __repr__(self) -> str:
         if self.fuse_type == "register":
@@ -88,4 +90,4 @@ class AttnConfig(BaseConfig):
     def __init__(self, Br, Bc, Kd, D, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_v=1, Nthreads=256, unrollLastIter: bool = True) -> None:
         super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
         self.operation = "attn"
-        self.template_dir = "../csrc/kernels/attention"
+        self.template_dir = os.path.join(os.path.dirname(__file__), "../csrc/kernels/attention")

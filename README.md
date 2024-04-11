@@ -32,6 +32,10 @@ mkdir build
 cd build
 cmake -DPROJECT_CUDA_ARCH="80" ..
 ```
+- add to PYTHONPATH
+```
+export PYTHONPATH=$PYTHONPATH:/path/to/attention_autotuner/python
+```
 
 ## TODO
 - chunkwise retnet
