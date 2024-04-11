@@ -1,4 +1,4 @@
-from .configs.config import BaseConfig
+from .configs import BaseConfig
 import os
 import importlib.util
 import tempfile

@@ -4,7 +4,7 @@ import os
 import torch
 
 from .base_tunner import CompileResult, BaseTunner
-from .configs.config import RetConfig, AttnConfig
+from .configs import RetConfig, AttnConfig
  
 
 

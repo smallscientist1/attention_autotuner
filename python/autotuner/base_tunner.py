@@ -7,7 +7,7 @@ import importlib.util
 
 import ctypes
 import torch
-from .configs.config import BaseConfig, supported_configs
+from .configs import BaseConfig, supported_configs
 
 import pprint
 import json
@@ -182,7 +182,7 @@ class BaseTunner:
         if os.path.exists(os.path.join(cache_path, "best_config_{}_{}_{}.json".format(op_name,dim_qk, dim_v))):
             with open(os.path.join(cache_path,"best_config_{}_{}_{}.json".format(op_name,dim_qk, dim_v)),"r") as f:
                 best_config_dict = json.load(f)
-            best_config = BaseConfig.from_dict(best_config_dict)
+            best_config = supported_configs[best_config_dict["operation"]].from_dict(best_config_dict)
             return best_config
         
         return None

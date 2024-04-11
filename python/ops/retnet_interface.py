@@ -1,9 +1,9 @@
-from runtime import Runtime
+from autotuner.runtime import Runtime
 from arch import Arch
-from config import RetConfig
+from autotuner.configs import RetConfig
 import torch
 
-from tunner import RetTunner
+from autotuner.tunner import RetTunner
 
 class RetNetAttn(torch.autograd.Function):
 

@@ -40,7 +40,7 @@ if __name__ == "__main__":
     '''
 
     # '''
-    from autotuner.configs.config import RetConfig
+    from autotuner.configs import RetConfig
     # cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_mask=1, num_stages_v=2, Nthreads=256, unrollLastIter=1)
     # result error!
     cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=64, BlockKSmem2=128, num_stages_qk=2, num_stages_mask=1, num_stages_v=1, Nthreads=256, unrollLastIter=0)
