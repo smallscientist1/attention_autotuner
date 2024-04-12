@@ -9,14 +9,16 @@ if __name__ == "__main__":
     seq_kv = 2048
     Kd = 256
     D = 256
-    q = torch.randn([b, h, seq_q, Kd], device="cuda:0", dtype=torch.float16)
-    k = torch.randn([b, h, seq_kv, Kd], device="cuda:0", dtype=torch.float16)
-    v = torch.randn([b, h, seq_kv, D], device="cuda:0", dtype=torch.float16)
+    q = torch.randn([b, h, seq_q, Kd], device="cuda:0", dtype=torch.float16, requires_grad=True)
+    k = torch.randn([b, h, seq_kv, Kd], device="cuda:0", dtype=torch.float16, requires_grad=True)
+    v = torch.randn([b, h, seq_kv, D], device="cuda:0", dtype=torch.float16, requires_grad=True)
     mask = torch.randn([h, seq_q, seq_kv], device="cuda:0", dtype=torch.float16)
     r = torch.zeros([b, h, seq_q], device="cuda:0", dtype=torch.float32)
     o = torch.zeros([b, h, seq_q, D], device="cuda:0", dtype=torch.float16)
     
     from arch import A100, RTX4090
+    # A100 ------------------------------------
+
     '''
     from config import AttnConfig
 
@@ -61,8 +63,29 @@ if __name__ == "__main__":
 
     torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
     torch.testing.assert_close(r, r_ref.squeeze(-1).float(), rtol=1e-3, atol=1e-3)
+    
+    do = torch.randn_like(o)
+    from autotuner.configs import RetBwdConfig
+    dq = torch.zeros_like(q)
+    dk = torch.zeros_like(k)
+    dv = torch.zeros_like(v)
+    dq_accum = torch.zeros([b, h, seq_q, Kd], device=dq.device, dtype=torch.float32)
+
+    cc = RetBwdConfig(Br=64, Bc=64, Kd=256, D=256, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4)
+    Runtime(A100(),cc , tmp_dir="../../tmp/ret_bwd").apply([q, k, v, mask, do, r, dq, dk, dv, dq_accum])
+    
+    o_ref.backward(do)
+    dq_ref = q.grad
+    dk_ref = k.grad
+    dv_ref = v.grad
+
+    torch.testing.assert_close(dq, dq_ref, rtol=1e-3, atol=1e-3)
+    torch.testing.assert_close(dk, dk_ref, rtol=1e-3, atol=1e-3)
+    torch.testing.assert_close(dv, dv_ref, rtol=1e-3, atol=1e-3)
     # '''
 
+
+    # RTX 4090--------------------------------
     '''
     from config import AttnConfig
 

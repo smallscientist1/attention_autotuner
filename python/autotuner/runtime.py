@@ -16,6 +16,8 @@ def _create_entry_code(config):
         entry_code_path = os.path.join(config.template_dir , "regfuse", "profile_code.py")
     elif config.fuse_type == "shared":
         entry_code_path = os.path.join(config.template_dir , "smemfuse", "profile_code.py")
+    else: # bwd
+        entry_code_path = os.path.join(config.template_dir , "profile_code.py")
     spec = importlib.util.spec_from_file_location("EntryCode", entry_code_path)
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
@@ -54,6 +56,8 @@ class Runtime:
             template_dir = os.path.join(config.template_dir , "regfuse/")
         elif config.fuse_type == "shared":
             template_dir = os.path.join(config.template_dir , "smemfuse/")
+        else: # bwd
+            template_dir = config.template_dir
         command = ["nvcc","-std=c++17","-O3","--use_fast_math","--expt-relaxed-constexpr","--disable-warnings", "--compiler-options", "'-fPIC'", "--shared", os.path.join(temp_dir, filename), "-lcuda",
             f"-gencode=arch=compute_{compute_version},code=sm_{compute_version}",
             f"-I{cutlass_dir}",f"-I{template_dir}",f"-I{csrc_dir}", "-o", os.path.join(temp_dir, lib_name)]
