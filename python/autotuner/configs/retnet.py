@@ -3,8 +3,12 @@ from .base_config import BaseConfig
 
 class RetConfig(BaseConfig):
     def __init__(self, Br, Bc, Kd, D, BlockKSmem=256, BlockKSmem2=64, num_stages_qk=1, num_stages_mask=1, num_stages_v=1, Nthreads=256, unrollLastIter:bool = True) -> None:
-        super().__init__(Br, Bc, Kd, D, BlockKSmem, BlockKSmem2, num_stages_qk, num_stages_v, Nthreads, unrollLastIter)
+        super().__init__(Br, Bc, Kd, D, BlockKSmem, num_stages_qk, Nthreads, unrollLastIter)
+        
+        self.BlockKSmem2 = BlockKSmem2
+        self.num_stages_v = num_stages_v
         self.num_stages_mask = num_stages_mask # [1]
+        
         self.operation = "ret"
         self.template_dir = os.path.join(os.path.dirname(__file__), "../../../csrc/kernels/retnet")
     

@@ -3,7 +3,7 @@ from .base_config import BaseConfig
 
 class RetBwdConfig(BaseConfig):
     def __init__(self, Br, Bc, Kd, D, mmawarpsN, mmawarpsN_dv, mmawarpsN_dk, mmawarpsN_dq, Nthreads=256, unrollLastIter: bool = True, BlockKSmem=256, num_stages_qk=1, num_stages_mask=1, num_stages_dv=1, num_stages_ds=1, num_stages_dq=1) -> None:
-        super().__init__(Br, Bc, Kd, D, BlockKSmem, 0, num_stages_qk, 1, Nthreads, unrollLastIter)
+        super().__init__(Br, Bc, Kd, D, BlockKSmem, num_stages_qk, Nthreads, unrollLastIter)
         self.num_stages_mask = num_stages_mask
 
         self.mmawarpsN = mmawarpsN
