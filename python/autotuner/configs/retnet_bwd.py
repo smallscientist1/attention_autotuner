@@ -18,7 +18,7 @@ class RetBwdConfig(BaseConfig):
         self.template_dir = os.path.join(os.path.dirname(__file__), "../../../csrc/kernels/retnet/bwd")
 
     def __repr__(self) -> str:
-        pass
+        return f"RetBwdConfig(Br={self.Br}, Bc={self.Bc}, Kd={self.Kd}, D={self.D}, mmawarpsN={self.mmawarpsN}, mmawarpsN_dv={self.mmawarpsN_dv}, mmawarpsN_dk={self.mmawarpsN_dk}, mmawarpsN_dq={self.mmawarpsN_dq}, Nthreads={self.Nthreads}, unrollLastIter={self.unrollLastIter}, BlockKSmem={self.BlockKSmem}, num_stages_qk={self.num_stages_qk}, num_stages_mask={self.num_stages_mask}, num_stages_dv={self.num_stages_dv}, num_stages_ds={self.num_stages_ds}, num_stages_dq={self.num_stages_dq})"
 
     def __str__(self) -> str:
         return f"{self.operation}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.mmawarpsN}_{self.mmawarpsN_dv}_{self.mmawarpsN_dk}_{self.mmawarpsN_dq}_{self.Nthreads}_{self.unrollLastIter}_{self.BlockKSmem}_{self.num_stages_qk}_{self.num_stages_mask}_{self.num_stages_dv}_{self.num_stages_ds}_{self.num_stages_dq}"

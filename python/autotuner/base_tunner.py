@@ -25,6 +25,8 @@ def _create_code_for_profiling(config):
         profile_code_path = os.path.join(config.template_dir , "regfuse", "profile_code.py")
     elif config.fuse_type == "shared":
         profile_code_path = os.path.join(config.template_dir , "smemfuse", "profile_code.py")
+    else: # bwd
+        profile_code_path = os.path.join(config.template_dir , "profile_code.py")
     spec = importlib.util.spec_from_file_location("ProfileCode", profile_code_path)
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
@@ -46,6 +48,8 @@ def _compile(config, arch, temp_dir:str, timeout: float = None):
         template_dir = os.path.join(config.template_dir , "regfuse/")
     elif config.fuse_type == "shared":
         template_dir = os.path.join(config.template_dir , "smemfuse/")
+    else: # bwd
+        template_dir = config.template_dir
     command = ["nvcc","-std=c++17","-O3","--use_fast_math","--expt-relaxed-constexpr","--disable-warnings", "--compiler-options", "'-fPIC'", "--shared", src.name, "-lcuda",
             f"-gencode=arch=compute_{compute_version},code=sm_{compute_version}",
             f"-I{cutlass_dir}",f"-I{template_dir}",f"-I{csrc_dir}", "-o", lib_name]
@@ -122,6 +126,9 @@ class BaseTunner:
                         configs.append(cur_config)
                     elif cur_config.fuse_type=="shared" and self.validate_shared_fuse(cur_config):
                         configs.append(cur_config)
+                    else: # BWD
+                        if self.validate_kernel(cur_config):
+                            configs.append(cur_config)
 
         # print configs
         print("Configs to be tuned: ")
@@ -191,6 +198,8 @@ class BaseTunner:
     def validate_shared_fuse(self, config):
         return False
     def validate_register_fuse(self, config):
+        return False
+    def validate_kernel(self, config):
         return False
     def generate_configs(self,Br:int,Bc:int,dim_qk:int,dim_v:int):
         configs = []

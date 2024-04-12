@@ -3,7 +3,7 @@ from arch import Arch
 from autotuner.configs import RetConfig, RetBwdConfig
 import torch
 
-from autotuner.tunner import RetTunner
+from autotuner.tunner import RetTunner, RetBwdTunner
 
 class RetNetAttn(torch.autograd.Function):
 
@@ -48,7 +48,8 @@ class RetNetAttn(torch.autograd.Function):
         
         dq_accum = torch.zeros([batch_size, nheads, seqlen_q, key_dim], device=q.device, dtype=torch.float32)
 
-        cc = RetBwdConfig(Br=64, Bc=64, Kd=key_dim, D=head_dim, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4)
+        cc = RetBwdTunner(arch=device_type, torch_array=[q, k, v, mask, do, r, dq, dk, dv, dq_accum]).tune(log_path="../../logs/")
+        # cc = RetBwdConfig(Br=64, Bc=64, Kd=key_dim, D=head_dim, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4)
         Runtime(device_type,cc , tmp_dir="../../tmp/ret_bwd").apply([q, k, v, mask, do, r, dq, dk, dv, dq_accum])
         return dq, dk, dv, None, None
 

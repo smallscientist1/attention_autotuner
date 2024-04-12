@@ -64,7 +64,11 @@ def benchmark_retnet(batch, heads, seqlen_q, seqlen_kv, dim_qk, dim_v):
             is_close_my(v_grad, v_grad_ref, rtol=1e-3, atol=1e-3)
 
     results = do_bench(lambda: RetNetAttnFunc(q,k,v,mask,device_type), quantiles=[0.5, 0.2, 0.8])
-    return results
+    results_bwd = None
+    if BENCH_BWD:
+        o1 = RetNetAttnFunc(q,k,v,mask,device_type)
+        results_bwd = do_bench(lambda: o1.backward(do, retain_graph = True), quantiles=[0.5, 0.2, 0.8])
+    return results, results_bwd
 
 
 batch = 4
@@ -73,5 +77,7 @@ seqlen_q = 2048
 seqlen_kv = 2048
 dim_qk = 256
 dim_v = 256
-res = benchmark_retnet(batch, heads, seqlen_q, seqlen_kv, dim_qk, dim_v)
-print(res)
+res,res_bwd = benchmark_retnet(batch, heads, seqlen_q, seqlen_kv, dim_qk, dim_v)
+print("fwd: ",res)
+if BENCH_BWD:
+    print("bwd: ",res_bwd)

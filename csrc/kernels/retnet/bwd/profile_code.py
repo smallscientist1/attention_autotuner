@@ -48,6 +48,51 @@ global_vars = \
 
 """
 
+profile_func = \
+"""
+extern "C" float profile(half* Parameter_0_0_0,half* Parameter_1_0_0,half* Parameter_2_0_0, half* Parameter_3_0_0,half* Result_7_0_0, float* r,half* dq, half* dk, half* dv, float* dqaccum, int B,int H, int Seq_q, int Seq_k){{
+    auto kernel1 = &ret_bwd_colblock<Kd,D,Br,Bc,Nthreads,mmawarpsN,mmawarpsN_dv,mmawarpsN_dk,mmawarpsN_dq,BlockKSmem, num_stages_qk, load_q_once, num_stages_mask, num_stages_dv, num_stages_ds, num_stages_dq, SmemKAtom, kSwizzle, SmemKAtomS, kSwizzleS, SmemKAtomO, kSwizzleO, SmemKAtomMask, kSwizzleMask,SmemKAtomV, kSwizzleV, unrollLastIter>;
+    auto kernel2 = &convert_dq<Kd,Br,Bc,Nthreads,mmawarpsN_dq,SmemKAtom,kSwizzle>;
+    if(shared_mem > 48*1024){{
+      cudaFuncSetAttribute(kernel1, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem);
+    }}
+    if(shared_mem_convert_dq > 48*1024){{
+      cudaFuncSetAttribute(kernel2, cudaFuncAttributeMaxDynamicSharedMemorySize, shared_mem_convert_dq);
+    }}
+
+    float ms;
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+    kernel1<<<dim3(B*H*Seq_k/Bc, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0,r,dq,dk,dv,dqaccum, H,Seq_k,Seq_q);
+    kernel2<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem_convert_dq,0>>>(dq,dqaccum,Seq_k,Seq_q);
+    if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    if(cudaGetLastError() != cudaSuccess) {{
+        printf("CUDA error: %s\\n", cudaGetErrorString(cudaGetLastError()));
+        return -1;
+    }}
+    cudaEventElapsedTime(&ms, start, stop);
+    int repeats = int(ceil(100.0 / ms));
+    cudaEventRecord(start, 0);
+    for(int _ = 0; _ < repeats; _++){{
+    kernel1<<<dim3(B*H*Seq_k/Bc, 1, 1), dim3(Nthreads, 1, 1),shared_mem,0>>>(Parameter_0_0_0,Parameter_1_0_0,Parameter_2_0_0,Parameter_3_0_0,Result_7_0_0,r,dq,dk,dv,dqaccum, H,Seq_k,Seq_q);
+    kernel2<<<dim3(B*H*Seq_q/Br, 1, 1), dim3(Nthreads, 1, 1),shared_mem_convert_dq,0>>>(dq,dqaccum,Seq_k,Seq_q);
+    }}
+    if(cudaEventRecord(stop, 0) != cudaSuccess) return -1;
+    if(cudaEventSynchronize(stop) != cudaSuccess) return -1;
+    if(cudaGetLastError() != cudaSuccess) {{
+        printf("CUDA error: %s\\n", cudaGetErrorString(cudaGetLastError()));
+        return -1;
+    }}
+    cudaEventElapsedTime(&ms, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop); 
+    return ms / repeats;
+}}
+"""
+
 kernel_entry = \
 """
 extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0,float* r, half* dq, half* dk, half* dv, float* dqaccum, int B, int H, int Seq_k,int Seq_q)
@@ -70,4 +115,5 @@ extern "C" int kernel_entry(half* Parameter_0_0_0, half* Parameter_1_0_0, half* 
 }}
 """
 
+profile_code = global_vars + profile_func
 kernel_code = global_vars + kernel_entry

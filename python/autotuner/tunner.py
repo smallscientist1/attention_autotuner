@@ -4,7 +4,9 @@ import os
 import torch
 
 from .base_tunner import CompileResult, BaseTunner
-from .configs import RetConfig, AttnConfig
+from .configs import RetConfig, AttnConfig, RetBwdConfig
+
+from .configs.base_config import find_best_pair, find_factor_pairs
  
 
 
@@ -165,5 +167,50 @@ class AttnTunner(BaseTunner):
                         config2 = AttnConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_v,Nthreads,unrollLastIter)
                         config2.set_fuse_type("shared")
                         configs.append(config2)
+        return configs
+
+class RetBwdTunner(BaseTunner):
+    def __init__(self, arch, torch_array: list):
+        super().__init__(arch, torch_array, "retnet_bwd")
+
+    def validate_kernel(self, config):
+        # check shared memory
+        # constexpr int shared_matmulqk = num_stages_qk*(Br)*BlockKSmem*sizeof(half)+num_stages_qk*Bc*BlockKSmem*sizeof(half);
+# constexpr int shared_mask = num_stages_mask*Br*Bc*sizeof(half);
+# constexpr int shared_SdO = Br*Bc*sizeof(half)+Br*D*sizeof(half);
+# constexpr int shared_v = Bc*D*sizeof(half);
+# constexpr int shared_mem = shared_matmulqk+shared_mask+shared_SdO+shared_v;
+        shared_matmulqk = config.num_stages_qk * config.Br * config.BlockKSmem * 2 + config.num_stages_qk * config.Bc * config.BlockKSmem * 2
+        shared_mask = config.num_stages_mask * config.Br * config.Bc * 2
+        shared_SdO = config.Br * config.Bc * 2 + config.Br * config.D * 2
+        shared_v = config.Bc * config.D * 2
+        shared_mem = shared_matmulqk + shared_mask + shared_SdO + shared_v
+        if shared_mem > self.arch.smem_cap:
+            return False
+        
+        return True
+
+    def generate_configs(self, Br: int, Bc: int, dim_qk: int, dim_v: int):
+        configs = []
+        
+        # TODD: tile 32?
+        if Br < 64 or Bc < 64:
+            return configs
+        for Nthreads in [128, 256]:
+            if Br == 32 and Bc == 32 and Nthreads == 256:
+                continue
+            warps_pairs = find_factor_pairs(Nthreads//32)
+            _, mmawarpsN = find_best_pair(warps_pairs, (Br, Bc))
+            _, mmawarpsN_dv = find_best_pair(warps_pairs, (Bc, dim_v))
+            _, mmawarpsN_dk = find_best_pair(warps_pairs, (Bc, dim_qk))
+            _, mmawarpsN_dq = find_best_pair(warps_pairs, (Br, dim_qk))
+
+            for BlockKSmem, num_stages_qk in [(dim_qk,1),(64 if dim_qk/2 > 64 else 32 if dim_qk/2 > 32 else 16, 2)]:
+                if BlockKSmem % 32 != 0:
+                    continue
+
+                for unrollLastIter in [True, False]:
+                    config = RetBwdConfig(Br, Bc, dim_qk, dim_v, mmawarpsN, mmawarpsN_dv, mmawarpsN_dk, mmawarpsN_dq, Nthreads, unrollLastIter, BlockKSmem=BlockKSmem, num_stages_qk=num_stages_qk)
+                    configs.append(config)
         return configs
 
