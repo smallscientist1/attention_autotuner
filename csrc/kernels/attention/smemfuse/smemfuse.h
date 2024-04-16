@@ -332,7 +332,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     cp_g2s_qk.prologue();
 
     cute::fill(m_new_fragment, -INFINITY);
-    cute::fill(lse_new_fragment, -INFINITY);
+    // cute::fill(lse_new_fragment, -INFINITY);
+    cute::fill(lse_new_fragment, 0.0f);
     // cute::fill(m_old_fragment, -INFINITY);
     cute::fill(sm_old, -INFINITY);
     clear(acc_o_fragment);
@@ -368,10 +369,14 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
         scores(ax0,ax1) *= softmax_scale;
       }
     }
+    Tensor m_old_fragment = make_fragment_like(m_new_fragment);
+    cute::copy(m_new_fragment, m_old_fragment);
     reduce_max<8,false>(scores, m_new_fragment);
     // p = exp(qk-m_new)
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
+      float scale = exp(m_old_fragment(ax0)-m_new_fragment(ax0));
+      lse_new_fragment(ax0) = lse_new_fragment(ax0) * scale;
       #pragma unroll
       for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
         scores(ax0,ax1) = exp(scores(ax0,ax1) - m_new_fragment(ax0));
@@ -382,7 +387,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     reduce_sum<8>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0; ax0<size(lse_new_fragment);ax0++){
-      lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
+      // lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
+      lse_new_fragment(ax0) = lse_new_fragment(ax0) + scores_sum(ax0);
     }
 
     #pragma unroll
@@ -478,10 +484,14 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
         scores(ax0,ax1) *= softmax_scale;
       }
     }
+    Tensor m_old_fragment = make_fragment_like(m_new_fragment);
+    cute::copy(m_new_fragment, m_old_fragment);
     reduce_max<8,false>(scores, m_new_fragment);
     // p = exp(qk-m_new)
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(scores); ax0++){
+      float scale = exp(m_old_fragment(ax0)-m_new_fragment(ax0));
+      lse_new_fragment(ax0) = lse_new_fragment(ax0) * scale;
       #pragma unroll
       for(int ax1 = 0;ax1 < size<1>(scores); ax1++){
         scores(ax0,ax1) = exp(scores(ax0,ax1) - m_new_fragment(ax0));
@@ -492,7 +502,8 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     reduce_sum<8>(scores, scores_sum);
     #pragma unroll
     for(int ax0 = 0; ax0<size(lse_new_fragment);ax0++){
-      lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
+      // lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
+      lse_new_fragment(ax0) = lse_new_fragment(ax0) + scores_sum(ax0);
     }
 
     #pragma unroll
@@ -560,13 +571,25 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     #pragma unroll
     for(int ax0 = 0;ax0 < size<0>(acc_o_rowcol);ax0++){
       // here causion!
-        float m_old_local = sm_old_copypartition(ax0%2*2,ax0/2,0);
+        // float m_old_local = sm_old_copypartition(ax0%2*2,ax0/2,0);
         float lse_new_local = slse_new_copypartition(ax0%2*2,ax0/2,0);
-        float scale = exp(m_old_local-lse_new_local);
+        // float scale = exp(m_old_local-lse_new_local);
+        float scale = 1/lse_new_local;
+
         #pragma unroll
         for(int ax1 = 0;ax1 < size<1>(acc_o_rowcol);ax1++){
             acc_o_rowcol(ax0,ax1) *= scale;
         }
+    }
+    #pragma unroll
+    for(int ax0 = 0;ax0 < size(lse_new_fragment);ax0++){
+      lse_new_fragment(ax0) = m_new_fragment(ax0) + log(lse_new_fragment(ax0));
+    }
+    __syncthreads();
+    #pragma unroll
+    for(int ax0 = 0;ax0 < size(lse_new_fragment);ax0++){
+      // here causion!
+      slse_new[threadIdx.x/nthreadsPerRow + ax0*(Nthreads/nthreadsPerRow)] = lse_new_fragment(ax0);
     }
     cutlass::NumericArrayConverter<half, float, decltype(size(acc_o_fragment))::value> convert_op2;
     auto frag2 = convert_op2(*reinterpret_cast<const cutlass::Array<float,decltype(size(acc_o_fragment))::value> *>(acc_o_fragment.data()));
