@@ -244,8 +244,9 @@ float test_smemfuse_attention(ProblemShape shape){
 int main(){
     ProblemShape PS(4,8,2048,2048);
     using InpleConfig = ImplementShapeAttnRegFwd<128,64,256,256,256>;
-    float ms = test_regfuse_attention<InpleConfig>(PS);
-    std::cout << "Time: " << ms << "ms" << std::endl;
+    float ms;
+    // ms = test_regfuse_attention<InpleConfig>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
 
     // ms = test_regfuse_attention<ImplementShapeAttnRegFwd<128,128,256,256,256,64,2,128,1,false>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
@@ -255,11 +256,13 @@ int main(){
     // std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_regfuse_attention<ImplementShapeAttnRegFwd<128,128,64,64,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
-    ms = test_regfuse_attention<ImplementShapeAttnRegFwd<128,64,256,128,256>>(PS);
-    std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_regfuse_attention<ImplementShapeAttnRegFwd<128,64,256,128,256>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
 
 
-    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,256,256,2,4>>(PS);
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,256,128,2,4>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,32,256,256,256,2,4>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 

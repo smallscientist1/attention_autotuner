@@ -19,19 +19,19 @@ if __name__ == "__main__":
     from arch import A100, RTX4090
     # A100 ------------------------------------
 
-    '''
-    from config import AttnConfig
+    # '''
+    from autotuner.configs import AttnConfig
 
     cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
     cc.set_fuse_type("register")
     # cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
     # result error!
     cc = AttnConfig(Br=64, Bc=64, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=64, num_stages_v=1, Nthreads=256)
-    # cc = AttnConfig(Br=128, Bc=32, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=1, Nthreads=256)
+    cc = AttnConfig(Br=128, Bc=32, Kd=256, D=256, unrollLastIter=1, BlockKSmem=256, num_stages_qk=1, BlockKSmem2=32, num_stages_v=1, Nthreads=256)
     # cc = AttnConfig(Br=64, Bc=128, Kd=256, D=256, unrollLastIter=1, BlockKSmem=64, num_stages_qk=2, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
     cc.set_fuse_type("shared")
 
-    Runtime(A100(), cc,tmp_dir="../tmp/attn").apply([q, k, v, o])
+    Runtime(A100(), cc,tmp_dir="../../tmp/attn").apply([q, k, v, o])
 
     import torch.nn.functional as F
     softmax_scale = 0.125
@@ -39,9 +39,9 @@ if __name__ == "__main__":
     o_ref = F.softmax(attn * softmax_scale, dim=-1) @ v
 
     torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
-    '''
-
     # '''
+
+    '''
     from autotuner.configs import RetConfig
     # cc = RetConfig(Br=128, Bc = 128, Kd = 256, D = 256, BlockKSmem=256, BlockKSmem2=32, num_stages_qk=1, num_stages_mask=1, num_stages_v=2, Nthreads=256, unrollLastIter=1)
     # result error!
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     torch.testing.assert_close(dq, dq_ref, rtol=1e-3, atol=1e-3)
     torch.testing.assert_close(dk, dk_ref, rtol=1e-3, atol=1e-3)
     torch.testing.assert_close(dv, dv_ref, rtol=1e-3, atol=1e-3)
-    # '''
+    '''
 
 
     # RTX 4090--------------------------------

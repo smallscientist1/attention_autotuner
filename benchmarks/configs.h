@@ -46,7 +46,7 @@ public:
     constexpr static int kSwizzleV = SmemKAtomV == 32 ? 2 : 3;
     constexpr static int SmemKAtomP = Bc_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzleP = SmemKAtomP == 32 ? 2 : 3;
-    constexpr static int SmemKAtomPf16 = 64;
+    constexpr static int SmemKAtomPf16 = BlockKSmem2 % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzlePf16 = SmemKAtomPf16 == 32 ? 2 : 3;
     constexpr static int warps_mma1_N = warps_mma1_N_;
     constexpr static int warps_mma_N = warps_mma_N_;

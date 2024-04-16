@@ -53,6 +53,7 @@ constexpr int shared_mem = (shared_matmulqkv + shared_accs) > shared_out ? (shar
 
 constexpr int Nthreads = 256;
 */
+// TODO: NthreadsPerRow should be 4 when SmemAtomPf16 is 32?(bankconflict2 for fp32 store )
 
 
 
@@ -101,7 +102,7 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
     
     // bankconflict2 when fragmentC->smem because of float
     using SmemLayoutAtomP = decltype(
-        composition(Swizzle<kSwizzleP, 3, 3>{},
+        composition(Swizzle<kSwizzleP, 2, 3>{},
                     Layout<Shape<_8, Int<SmemKAtomP>>,
                            Stride<Int<SmemKAtomP>, _1>>{}));
     using SmemLayoutP = decltype(tile_to_shape(
