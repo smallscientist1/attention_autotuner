@@ -259,7 +259,7 @@ int main(){
     // ms = test_regfuse_attention<ImplementShapeAttnRegFwd<128,64,256,128,256>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
 
-
+    // A100-----------------------------------------
     // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,256,128,2,4>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,32,256,256,256,2,4>>(PS);
@@ -280,7 +280,11 @@ int main(){
     // std::cout << "Time: " << ms << "ms" << std::endl;
     // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<32,64,256,128,128,2,4>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
-    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,128,128,2,2>>(PS);
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,128,128,2,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    
+    // RTX 4090 -------------------------------------
+    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,32,256,128,128,1,2>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 
