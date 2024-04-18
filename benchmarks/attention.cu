@@ -262,7 +262,25 @@ int main(){
 
     // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,256,128,2,4>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
-    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,32,256,256,256,2,4>>(PS);
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,32,256,256,256,2,4>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,384,256,2,8>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,64,256,384,256,2,4,64,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;  
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,64,256,384,256,2,4,64,2,64,1,false>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;  
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<128,64,256,128,256,2,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,512,256,2,8>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,128,256,2,4>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,128,256,2,4>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<32,64,256,128,128,2,4>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    ms = test_smemfuse_attention<ImplementShapeAttnSharedFwd<64,64,256,128,128,2,2>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 
