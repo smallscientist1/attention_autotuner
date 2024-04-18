@@ -38,7 +38,10 @@ float do_bench(std::function<void()> k, int ms_warmup=50, int ms_measure=100 ) {
         k();
         cudaEventRecord(stop_[i], 0);
     }
-    cudaDeviceSynchronize();
+    if(cudaDeviceSynchronize()!=cudaSuccess) {
+        printf("CUDA error\n");
+        printf("%s\n", cudaGetErrorString(cudaGetLastError()));
+    }
     std::vector<float> ms_(measure);
     for(int i = 0; i < measure; i++) {
         cudaEventElapsedTime(&ms_[i], start_[i], stop_[i]);
