@@ -77,8 +77,10 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_regfuse(half* Paramete
     static_assert(Kd%(BlockKSmem)==0,"Kd%(BlockKSmem)!=0");
     static_assert(Bc%(BlockKSmem2)==0,"Bc%(BlockKSmem2)!=0");
     // Gmem copy atom
-    static_assert(BlockKSmem2%(Nthreads/(SmemKAtom/8))==0, "BlockKSmem2%(Nthreads/(SmemKAtom/8))!=0");
     static_assert(BlockKSmem%SmemKAtom==0, "BlockKSmem%SmemKAtom!=0");
+    static_assert(BlockKSmem2%(Nthreads/(SmemKAtom/8))==0, "gmem load V fail");
+    static_assert(Br%(Nthreads/(SmemKAtom/8))==0, "gmem load Q fail");
+    static_assert(Bc%(Nthreads/(SmemKAtom/8))==0, "gmem load K fail");
 
     using namespace cute;
     TiledMMA<MMA_Atom<SM80_16x8x16_F32F16F16F32_TN>,Layout<Shape<Int<Nwarps>,_1,_1>>,Layout<Shape<_1,_2,_1>>> tiled_mma;

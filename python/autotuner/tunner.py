@@ -160,6 +160,8 @@ class AttnTunner(BaseTunner):
                         continue
                     if BlockKSmem==32 and BlockKSmem2==32 and Nthreads==256: # matmul2(BlockKSmem=32->SmemKAtom=32-> load v: BlockKSmem2>=Nthreads/(SmemKatom/8))
                         continue
+                    if (Br==32 or Bc==32) and BlockKSmem==32 and Nthreads==256: # global load q ,k
+                        continue
                     for unrollLastIter in [True, False]:
                         config1 = AttnConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_v,Nthreads,unrollLastIter)
                         config1.set_fuse_type("register")

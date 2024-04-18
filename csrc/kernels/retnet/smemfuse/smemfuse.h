@@ -91,7 +91,9 @@ __global__ void __launch_bounds__(Nthreads) ret_fwd_smemfuse(half* Parameter_0_0
     static_assert(Kd%(BlockKSmem)==0,"Kd%(BlockKSmem)!=0");
     static_assert(Bc%(BlockKSmem2)==0,"Bc%(BlockKSmem2)!=0");
     // Gmem copy atom
-    static_assert(BlockKSmem2%(Nthreads/(SmemKAtomV/8))==0, "BlockKSmem2%(Nthreads/(SmemKAtom/8))!=0");
+    static_assert(BlockKSmem2%(Nthreads/(SmemKAtomV/8))==0, "gmem load V fail");
+    static_assert(Br%(Nthreads/(SmemKAtom/8))==0, "gmem load Q fail");
+    static_assert(Bc%(Nthreads/(SmemKAtom/8))==0, "gmem load K fail");
     // Smem Layout
     static_assert(BlockKSmem%SmemKAtom==0, "BlockKSmem%SmemKAtom!=0");
     static_assert(BlockKSmem2%SmemKAtomPf16==0, "BlockKSmem2%SmemKAtomPf16!=0");
