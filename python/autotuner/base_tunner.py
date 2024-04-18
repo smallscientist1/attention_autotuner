@@ -107,16 +107,9 @@ class BaseTunner:
         # subprocess.run(["rm", libname], check=True)
         return latency
     
-    def tune(self, log_path="../logs/"):
+    def get_tuned_configs(self):
         dim_qk = self.problem_key["dim_qk"]
         dim_v = self.problem_key["dim_v"]
-
-        best_config = self.check_cache()
-        if best_config is not None:
-            # print("Best config found in cache: ")
-            # pprint.pprint(best_config)
-            return best_config
-
         configs = []
         for Br in self.Br_list:
             for Bc in self.Bc_list:
@@ -129,6 +122,19 @@ class BaseTunner:
                     else: # BWD
                         if self.validate_kernel(cur_config):
                             configs.append(cur_config)
+        return configs
+
+    def tune(self, log_path="../logs/"):
+        dim_qk = self.problem_key["dim_qk"]
+        dim_v = self.problem_key["dim_v"]
+
+        best_config = self.check_cache()
+        if best_config is not None:
+            # print("Best config found in cache: ")
+            # pprint.pprint(best_config)
+            return best_config
+
+        configs = self.get_tuned_configs()
 
         # print configs
         print("Configs to be tuned: ")
