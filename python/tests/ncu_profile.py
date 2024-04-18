@@ -25,7 +25,7 @@ def ncu_cycles(batch:int, heads, seqlen_q, seqlen_kv, dim_qk, dim_v,
 
     text = result.stdout
     # num_pattern1 = r"\d+" # A100(123456)
-    num_pattern2 = r"\d{1,3}(?:,\d{3})*(?:\.\d+)?" # RTX4090(123,456)
+    num_pattern2 = r"\d+(?:,\d{3})*(?:\.\d+)?" # RTX4090(123,456)
     pattern = r"Elapsed Cycles\s+cycle\s+({})".format(num_pattern2)
     match_list = re.findall(pattern, text)
     assert len(match_list) == 1
@@ -139,7 +139,8 @@ configs_dict = {
         ),
     )
 }
-arch = "RTX4090" # A100
+import torch
+arch = "RTX4090" if torch.cuda.get_device_capability(0) == (8,9) else "A100" if torch.cuda.get_device_capability(0) == (8,0) else None
 if __name__ == "__main__":
     configs = configs_dict[arch]
     for config in configs:

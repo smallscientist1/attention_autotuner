@@ -40,6 +40,20 @@ test_dict_list = [
     },
     {
     "arch_type": A100(),
+    "operation": "attn",
+    "problem_size": (4,8, 2048, 2048, 128, 128),
+    "configs":{
+        "register": [
+            
+        ],
+        "shared": [
+            AttnConfig(Br=32,Bc=64,Kd=128,D=128,BlockKSmem=128,BlockKSmem2=64,num_stages_qk=1,num_stages_v=1,Nthreads=256,unrollLastIter=1,warps_mma1_n=4,warps_mma_n=4),
+            AttnConfig(Br=32,Bc=64,Kd=128,D=128,BlockKSmem=32,BlockKSmem2=64,num_stages_qk=2,num_stages_v=1,Nthreads=128,unrollLastIter=1,warps_mma1_n=2,warps_mma_n=4),
+        ]
+    }
+    },
+    {
+    "arch_type": A100(),
     "operation": "ret",
     "problem_size": (4,8, 2048, 2048, 256, 256),
     "configs":{
@@ -104,33 +118,38 @@ def test_attn(test_dict):
 
     print(f"Testing {operation} on {str(arch)} with problem size {test_dict['problem_size']}")
     
+    o_ref = ref_func()
     cc_dict = test_dict["configs"]
     for cc in cc_dict["register"]:
+        o.zero_()
         cc.set_fuse_type("register")
         Runtime(arch, cc,tmp_dir=f"../../tmp/{operation}").apply(torch_array)
 
-        o_ref = ref_func()
         isclose = is_close_my(o, o_ref, rtol=1e-3, atol=1e-3)
         if not isclose:
             print("FAILED CONFIG:")
             pprint.pprint(cc)
     for cc in cc_dict["shared"]:
+        o.zero_()
         cc.set_fuse_type("shared")
         Runtime(arch, cc,tmp_dir=f"../../tmp/{operation}").apply(torch_array)
 
-        o_ref = ref_func()
         isclose = is_close_my(o, o_ref, rtol=1e-3, atol=1e-3)
         if not isclose:
             print("FAILED CONFIG:")
             pprint.pprint(cc)
     
-
-    for cc in bwd_cc_list:
-        Runtime(arch, cc, tmp_dir=f"../../tmp/{operation}_bwd").apply(bwd_array)
+    if len(bwd_cc_list):
         o_ref.backward(do)
         dq_ref = q.grad
         dk_ref = k.grad
         dv_ref = v.grad
+    for cc in bwd_cc_list:
+        dq.zero_()
+        dk.zero_()
+        dv.zero_()
+        dq_accum.zero_()
+        Runtime(arch, cc, tmp_dir=f"../../tmp/{operation}_bwd").apply(bwd_array)
         is1 = is_close_my(dq, dq_ref, rtol=1e-3, atol=1e-3)
         is2 = is_close_my(dk, dk_ref, rtol=1e-3, atol=1e-3)
         is3 = is_close_my(dv, dv_ref, rtol=1e-3, atol=1e-3)
