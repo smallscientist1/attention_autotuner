@@ -20,6 +20,11 @@ an autotuner for attention
 - acco * scale
 - accs / r_new
 
+## dependencies
+- cuda 12.3
+- cmake 3.24
+- nsight compute 
+
 ## build
 - clone the repo and submodule
 ```

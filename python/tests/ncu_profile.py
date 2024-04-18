@@ -2,9 +2,10 @@
 # 
 import subprocess
 import re
+import sys
 
 NCU_EXE = "/usr/local/cuda/bin/ncu"
-PYTHON_EXE = "/anaconda/envs/mamba/bin/python"
+PYTHON_EXE = sys.executable # "/anaconda/envs/mamba/bin/python"
 
 def ncu_cycles(batch:int, heads, seqlen_q, seqlen_kv, dim_qk, dim_v,
                operation, fuse_type, arch, 
@@ -23,15 +24,18 @@ def ncu_cycles(batch:int, heads, seqlen_q, seqlen_kv, dim_qk, dim_v,
     # print(result.stderr)
 
     text = result.stdout
-    pattern = r"Elapsed Cycles\s+cycle\s+(\d+)"
+    # num_pattern1 = r"\d+" # A100(123456)
+    num_pattern2 = r"\d{1,3}(?:,\d{3})*(?:\.\d+)?" # RTX4090(123,456)
+    pattern = r"Elapsed Cycles\s+cycle\s+({})".format(num_pattern2)
     match_list = re.findall(pattern, text)
     assert len(match_list) == 1
     cycles = match_list[0]
+    cycles = cycles.replace(",", "")
     # print(cycles)
-    return cycles
+    return int(cycles)
 
-if __name__ == "__main__":
-    configs = (
+configs_dict = {
+    "A100": (
         (
             (2048, 2048, 256, 128),
             (32, 32, 256, 128),
@@ -103,7 +107,41 @@ if __name__ == "__main__":
             (64, 64, 16),
             4,8
         ),
+    ),
+    "RTX4090": (
+        (
+            (2048, 2048, 256, 128),
+            (64, 32, 256, 128),
+            (16, 32, 16),
+            (32, 64, 16),
+            4,8
+        ),
+        (
+            (2048, 2048, 256, 256),
+            (64, 32, 256, 256),
+            (16, 16, 16),
+            (64, 64, 16),
+            4,8
+        ),
+        (
+            (2048, 2048, 256, 384),
+            (64, 32, 256, 384),
+            (16, 16, 16),
+            (64, 48, 16),
+            4,8
+        ),
+        (
+            (2048, 2048, 256, 512),
+            (64, 32, 256, 512),
+            (16, 16, 16),
+            (64, 64, 16),
+            4,8
+        ),
     )
+}
+arch = "RTX4090" # A100
+if __name__ == "__main__":
+    configs = configs_dict[arch]
     for config in configs:
         seqlen_q, seqlen_kv, dim_qk, dim_v = config[0]
         Br, Bc, _, _ = config[1]
@@ -113,7 +151,7 @@ if __name__ == "__main__":
         Nthreads = int(config[1][0]/config[2][0] * (config[1][1]/config[2][1]) * 32)
         cycles = ncu_cycles(
             batch, head, seqlen_q, seqlen_kv, dim_qk, dim_v,
-            "attn", "shared", "A100", 
+            "attn", "shared", arch, 
             Br, Bc, Nthreads, warp_mma1_n, warp_mma_n, 1, dim_qk, Bc, 1, 1
         )
         print(config)
