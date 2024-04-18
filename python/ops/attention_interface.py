@@ -1,6 +1,6 @@
 from autotuner.runtime import Runtime
 from arch import Arch
-from autotuner.configs import RetConfig, RetBwdConfig
+from autotuner.configs import AttnConfig
 import torch
 
 from autotuner.tunner import AttnTunner
@@ -27,6 +27,8 @@ class MultiHeadAttnFunc(torch.autograd.Function):
         r = torch.zeros(batch_size, nheads, seqlen_q, device=q.device, dtype=torch.float32)
 
         cc = AttnTunner(arch=device_type, torch_array=[q, k, v, o]).tune(log_path="../../logs/")
+        # cc = AttnConfig(Br=64,Bc=32,Kd=256,D=128,BlockKSmem=256,BlockKSmem2=32,num_stages_qk=1,num_stages_v=1,Nthreads=128,unrollLastIter=1, warps_mma1_n=1, warps_mma_n=2)
+        # cc.set_fuse_type("shared")
         Runtime(device_type, cc, tmp_dir="../../tmp/attn").apply([q, k, v, o])
         ctx.save_for_backward(q, k, v) # , lse)
         ctx.device_type = device_type

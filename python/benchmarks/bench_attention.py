@@ -1,3 +1,5 @@
+import sys
+# sys.path.append("../")
 from do_bench import do_bench
 from ops.attention_interface import flash_attn_func
 import torch
