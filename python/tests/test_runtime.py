@@ -7,6 +7,8 @@ from utils.misc import is_close_my
 
 from autotuner.configs import AttnConfig, RetConfig, RetBwdConfig
 
+device_type = RTX4090() if torch.cuda.get_device_capability(0) == (8,9) else A100() if torch.cuda.get_device_capability(0) == (8,0) else None
+
 test_dict_list = [
     {
     "arch_type": A100(),
@@ -52,11 +54,26 @@ test_dict_list = [
         RetBwdConfig(Br=64, Bc=64, Kd=256, D=256, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4),
     },
     },
+    {
+    "arch_type": RTX4090(),
+    "operation": "attn",
+    "problem_size": (4,8, 2048, 2048, 256, 256),
+    "configs":{
+        "register": [
+            AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=0, BlockKSmem=64, num_stages_qk=2, BlockKSmem2=32, num_stages_v=2, Nthreads=256),
+        ],
+        "shared": [
+        
+        ],
+    }
+    }
 
 ]
 
 def test_attn(test_dict):
     arch = test_dict["arch_type"]
+    if device_type.compute_capability != arch.compute_capability:
+        return
     operation = test_dict["operation"]
     b,h, seq_q, seq_kv, Kd, D = test_dict["problem_size"]
     if operation == "attn" or operation == "ret":
@@ -126,35 +143,3 @@ if __name__ == "__main__":
     torch.manual_seed(0)
     for test_dict in test_dict_list:
         test_attn(test_dict)
-    """
-    b = 4
-    h = 4
-    seq_q = 2048
-    seq_kv = 2048
-    Kd = 256
-    D = 128
-    q = torch.randn([b, h, seq_q, Kd], device="cuda:0", dtype=torch.float16, requires_grad=True)
-    k = torch.randn([b, h, seq_kv, Kd], device="cuda:0", dtype=torch.float16, requires_grad=True)
-    v = torch.randn([b, h, seq_kv, D], device="cuda:0", dtype=torch.float16, requires_grad=True)
-    mask = torch.randn([h, seq_q, seq_kv], device="cuda:0", dtype=torch.float16)
-    r = torch.zeros([b, h, seq_q], device="cuda:0", dtype=torch.float32)
-    o = torch.zeros([b, h, seq_q, D], device="cuda:0", dtype=torch.float16)
-    """
-
-
-    # RTX 4090--------------------------------
-    '''
-    from config import AttnConfig
-
-    cc = AttnConfig(Br=128, Bc=128, Kd=256, D=256, unrollLastIter=0, BlockKSmem=64, num_stages_qk=2, BlockKSmem2=32, num_stages_v=2, Nthreads=256)
-    cc.set_fuse_type("register")
-
-    Runtime(RTX4090(), cc,tmp_dir="../tmp/attn").apply([q, k, v, o])
-
-    import torch.nn.functional as F
-    softmax_scale = 0.125
-    attn = q @ k.transpose(-1, -2)
-    o_ref = F.softmax(attn * softmax_scale, dim=-1) @ v
-
-    torch.testing.assert_close(o, o_ref, rtol=1e-3, atol=1e-3)
-    '''
