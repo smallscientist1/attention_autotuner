@@ -44,7 +44,7 @@ test_dict_list = [
     "problem_size": (4,8, 2048, 2048, 128, 128),
     "configs":{
         "register": [
-            
+            AttnConfig(Br=64, Bc=256,Kd=128,D=128, BlockKSmem=128, BlockKSmem2=256, num_stages_qk=1, num_stages_v=1, Nthreads=128, unrollLastIter=1),
         ],
         "shared": [
             AttnConfig(Br=32,Bc=64,Kd=128,D=128,BlockKSmem=128,BlockKSmem2=64,num_stages_qk=1,num_stages_v=1,Nthreads=256,unrollLastIter=1,warps_mma1_n=4,warps_mma_n=4),
