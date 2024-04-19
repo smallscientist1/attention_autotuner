@@ -52,6 +52,10 @@ class BaseConfig:
 
     def set_fuse_type(self, fuse_type):
         self.fuse_type = fuse_type
+        # TODO: more elegant way to set warps_mma1_n and warps_mma_n
+        if fuse_type == "register":
+            self.warps_mma1_n = 1
+            self.warps_mma_n = 1
 
     def __repr__(self) -> str:
         if self.fuse_type == "register":

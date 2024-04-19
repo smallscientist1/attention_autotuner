@@ -81,4 +81,10 @@ class Runtime:
         torch.cuda.set_device(device)
         ret = lib.kernel_entry(*[ctypes.c_void_p(arr.data_ptr()) for arr in torch_array], ctypes.c_int(batch_size), ctypes.c_int(nheads), ctypes.c_int(seqlen_k), ctypes.c_int(seqlen_q))
         
+from concurrent.futures import ThreadPoolExecutor   
+def compile_parallel(configs:list,arch, tmp_dir="../tmp"):
+    _func = lambda cc: Runtime(arch, cc, tmp_dir=tmp_dir).compile()
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        lib_names = executor.map(_func, configs)
+    return list(lib_names)
 
