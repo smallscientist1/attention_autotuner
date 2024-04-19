@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument('--dim_qk', type=int, default=256, help='')
     parser.add_argument('--dim_v', type=int, default=256, help='')
     parser.add_argument('--operation', type=str, default='attn', help='[retnet, attn]')
-    parser.add_argument('--fuse_type', type=str, default="none", help="[reg, shared, none]")
+    parser.add_argument('--fuse_type', type=str, default="none", help="[register, shared, none]")
     parser.add_argument('--arch', type=str, default="A100", help="[A100, RTX4090]")
     
     parser.add_argument("--Br", type=int)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     else:
         cc = None
     
-    if args.fuse_type == "reg":
+    if args.fuse_type == "register":
         cc.set_fuse_type("register")
     elif args.fuse_type == "shared":
         cc.set_fuse_type("shared")
