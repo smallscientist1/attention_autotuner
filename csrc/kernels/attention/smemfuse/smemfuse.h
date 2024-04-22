@@ -387,10 +387,12 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
       lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
     }
 
+    if(threadIdx.x % nthreadsPerRow == 0){
     #pragma unroll
     for(int ax0 = 0;ax0 < size(m_new_fragment);ax0++){
       // here causion!
       sm_new[threadIdx.x/nthreadsPerRow + ax0*(Nthreads/nthreadsPerRow)] = m_new_fragment(ax0);
+    }
     }
 
     cutlass::NumericArrayConverter<half, float, decltype(size(scores))::value> convert_op;
@@ -497,10 +499,12 @@ __global__ void __launch_bounds__(Nthreads) flashattn_fwd_smemfuse(half* Paramet
       lse_new_fragment(ax0) = m_new_fragment(ax0) + log(exp( lse_new_fragment(ax0) - m_new_fragment(ax0) ) + scores_sum(ax0));
     }
 
+    if(threadIdx.x % nthreadsPerRow == 0){
     #pragma unroll
     for(int ax0 = 0;ax0 < size(m_new_fragment);ax0++){
       // here causion!
       sm_new[threadIdx.x/nthreadsPerRow + ax0*(Nthreads/nthreadsPerRow)] = m_new_fragment(ax0);
+    }
     }
 
     cutlass::NumericArrayConverter<half, float, decltype(size(scores))::value> convert_op;
