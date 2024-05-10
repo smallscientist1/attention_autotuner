@@ -12,6 +12,8 @@ from .configs import BaseConfig, supported_configs
 import pprint
 import json
 
+import time
+
 
 
         
@@ -125,6 +127,8 @@ class BaseTunner:
         return configs
 
     def tune(self, log_path="../logs/"):
+        st = time.time()
+
         dim_qk = self.problem_key["dim_qk"]
         dim_v = self.problem_key["dim_v"]
 
@@ -163,6 +167,8 @@ class BaseTunner:
                 best_config = cresult.config
             profile_dict[cresult.config] = lib_latency
 
+        end = time.time()
+
         print("##########################################################")
         print("Operation type: ", best_config.operation)
         print("Best config: ")# , best_config)
@@ -179,6 +185,7 @@ class BaseTunner:
             f.write("best config: \n")
             f.write(repr(best_config)+"\n")
             f.write(str(latency)+"\n")
+            f.write("\nsearch time: "+str(end-st)+"s")
 
         cache_path = self.cache_path
         os.makedirs(cache_path,exist_ok=True)
