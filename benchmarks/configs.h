@@ -119,11 +119,11 @@ public:
     constexpr static int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
     constexpr static int SmemKAtomO = 64;
     constexpr static int kSwizzleO = SmemKAtomO == 32 ? 2 : 3;
-    constexpr static int SmemKAtomV = 64;
+    constexpr static int SmemKAtomV = D_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzleV = SmemKAtomV == 32 ? 2 : 3;
-    constexpr static int SmemKAtom = 64;
+    constexpr static int SmemKAtom = BlockKSmem_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzle = SmemKAtom == 32 ? 2 : 3;
-    constexpr static int SmemKAtomS = 64;
+    constexpr static int SmemKAtomS =  Bc_ % 64 == 0 ? 64 : 32;
     constexpr static int kSwizzleS = SmemKAtomS == 32 ? 2 : 3;
 };
 

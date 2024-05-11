@@ -188,7 +188,19 @@ float test_retnet_bwd(ProblemShape shape){
 int main(){
     ProblemShape PS(4,8,2048,2048);
     using InpleConfig = ImplementShapeRetBwd<64,64,256,256,256,2,4,4,4>;
-    float ms = test_retnet_bwd<InpleConfig>(PS);
+    float ms;
+    ms = test_retnet_bwd<InpleConfig>(PS);
+    std::cout << "Time: " << ms << "ms" << std::endl;
+    // num_stage_qk 2, illegal memory access, Idk why
+    // ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,128,128,128,1,2,2,2,32,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // num_stage_qk 2  illegal memory access, Idk why
+    // ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,256,128,128,1,2,2,2,64,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    // num_stage_qk 2 result not correct
+    // ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,256,128,256,1,2,2,2,64,2>>(PS);
+    // std::cout << "Time: " << ms << "ms" << std::endl;
+    ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,128,128,128,1,2,2,2>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
 
 

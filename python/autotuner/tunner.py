@@ -70,22 +70,28 @@ class RetTunner(BaseTunner):
         
     def generate_configs(self,Br:int,Bc:int,dim_qk:int,dim_v:int):
         configs = []
-        for BlockKSmem,num_stages_qk in [(dim_qk,1),(int(dim_qk/4),2)]:
+        for BlockKSmem,num_stages_qk in [(dim_qk,1),(64 if dim_qk/2 > 64 else 32 if dim_qk/2 > 32 else 16, 2)]:
             if BlockKSmem % 32 != 0:
                 continue
             for BlockKSmem2,num_stages_v in [(Bc,1),(int(Bc/4),2)]:
                 if BlockKSmem2 % 32 != 0:
                     continue
                 # TODO: more general
-                Nthreads = 128 if Br==32 and Bc==32 else 256
-                num_stages_mask = 1
-                for unrollLastIter in [True, False]:
-                    config1 = RetConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_mask,num_stages_v,Nthreads,unrollLastIter)
-                    config1.set_fuse_type("register")
-                    configs.append(config1)
-                    config2 = RetConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_mask,num_stages_v,Nthreads,unrollLastIter)
-                    config2.set_fuse_type("shared")
-                    configs.append(config2)
+                for Nthreads in [128,256]:
+                    if Br==32 and Bc==32 and Nthreads==256: # matmul1
+                        continue
+                    if BlockKSmem==32 and BlockKSmem2==32 and Nthreads==256: # load v
+                        continue
+                    if (Br==32 or Bc==32) and BlockKSmem==32 and Nthreads==256: # global load q ,k
+                        continue
+                    num_stages_mask = 1
+                    for unrollLastIter in [True, False]:
+                        config1 = RetConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_mask,num_stages_v,Nthreads,unrollLastIter)
+                        config1.set_fuse_type("register")
+                        configs.append(config1)
+                        config2 = RetConfig(Br,Bc,dim_qk,dim_v,BlockKSmem,BlockKSmem2,num_stages_qk,num_stages_mask,num_stages_v,Nthreads,unrollLastIter)
+                        config2.set_fuse_type("shared")
+                        configs.append(config2)
         return configs
 
 class AttnTunner(BaseTunner):
@@ -207,7 +213,9 @@ class RetBwdTunner(BaseTunner):
             _, mmawarpsN_dk = find_best_pair(warps_pairs, (Bc, dim_qk))
             _, mmawarpsN_dq = find_best_pair(warps_pairs, (Br, dim_qk))
 
-            for BlockKSmem, num_stages_qk in [(dim_qk,1),(64 if dim_qk/2 > 64 else 32 if dim_qk/2 > 32 else 16, 2)]:
+            for BlockKSmem, num_stages_qk in [(dim_qk,1)]:
+                # temperory solution
+                # ,(64 if dim_qk/2 > 64 else 32 if dim_qk/2 > 32 else 16, 2)]:
                 if BlockKSmem % 32 != 0:
                     continue
 

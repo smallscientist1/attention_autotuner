@@ -77,6 +77,7 @@ inline __device__ auto convert_type(cute::Tensor<Engine, Layout> const &tensor) 
     return make_tensor(make_rmem_ptr<To_type>(&frag), tensor.layout());
 }
 
+// load_q_once for colblock is actually load k once
 template<int Kd, int D, int Br, int Bc, int Nthreads, int mmawarpsN, int mmawarpsN_dv, int mmawarpsN_dk, int mmawarpsN_dq, int BlockKSmem = Kd, int num_stages_qk = 1, bool load_q_once = true, int num_stages_mask = 1, int num_stages_dv = 1, int num_stages_ds = 1, int num_stages_dq = 1, int SmemKAtom = 64, int kSwizzle=3, int SmemKAtomS = 64, int kSwizzleS=3, int SmemKAtomO = 64, int kSwizzleO = 3, int SmemKAtomMask=64, int kSwizzleMask=3 , int SmemKAtomV=64, int kSwizzleV=3, bool unrollLastIter=true>
 __global__ void __launch_bounds__(Nthreads) ret_bwd_colblock(half* Parameter_0_0_0, half* Parameter_1_0_0, half* Parameter_2_0_0, half* Parameter_3_0_0, half* Result_7_0_0, float* r, half* dq, half* dk, half* dv,float* dqaccum, int H, int seq_k, int seq_q){
 
@@ -563,7 +564,12 @@ __global__ void __launch_bounds__(Nthreads) ret_bwd_colblock(half* Parameter_0_0
     // copy q
     if(i<iters_end-1){
       gQ1_partition.data() = gQ1_partition.data() + (-Kd) + Br*Kd;
-      cp_g2s_q.prologue();
+      if(load_q_once){
+        cp_g2s_q.prologue();
+      }else{
+        gK1_partition.data() = gK1_partition.data() + (-Kd);
+        cp_g2s_qk.prologue();
+      }
     }
     // dq = ds @ k(can reg fuse?)
     clear(dq_fragment);

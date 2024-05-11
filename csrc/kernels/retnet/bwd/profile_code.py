@@ -24,10 +24,10 @@ global_vars = \
     constexpr int SmemKAtomMask = Bc % 64 == 0 ? 64 : 32;
     constexpr int kSwizzleMask = SmemKAtomMask == 32 ? 2 : 3;
     // for sS swizzle
-    constexpr int SmemKAtomS = BlockKSmem % 64 == 0 ? 64 : 32;
+    constexpr int SmemKAtomS = Bc % 64 == 0 ? 64 : 32;
     constexpr int kSwizzleS = SmemKAtomS == 32 ? 2 : 3;
     // for sO swizzle
-    constexpr int SmemKAtomO = BlockKSmem % 64 == 0 ? 64 : 32;
+    constexpr int SmemKAtomO = D % 64 == 0 ? 64 : 32;
     constexpr int kSwizzleO = SmemKAtomO == 32 ? 2 : 3;
     // for sV swizzle
     constexpr int SmemKAtomV = D % 64 == 0 ? 64 : 32;
