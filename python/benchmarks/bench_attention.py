@@ -8,10 +8,11 @@ from utils.ref_op import attention_ref
 import traceback
 
 from arch import A100
+from arch import RTX4090
 
 dtype = torch.float16
 device = torch.device("cuda")
-device_type = A100()
+device_type = RTX4090() if torch.cuda.get_device_capability(0) == (8,9) else A100() if torch.cuda.get_device_capability(0) == (8,0) else None
 softmax_scale = 0.125
 
 CHECK_PYTORCH = True
