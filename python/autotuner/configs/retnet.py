@@ -25,6 +25,6 @@ class RetConfig(BaseConfig):
     
     def __str__(self) -> str:
         if self.fuse_type == "register":
-            return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_mask}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}"
+            return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_mask}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}"
         else:
-            return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_mask}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}_{self.warps_mma1_n}_{self.warps_mma_n}"
+            return f"{self.fuse_type}_{self.Br}_{self.Bc}_{self.Kd}_{self.D}_{self.BlockKSmem}_{self.BlockKSmem2}_{self.num_stages_qk}_{self.num_stages_mask}_{self.num_stages_v}_{self.Nthreads}_{self.unrollLastIter}_{self.warps_mma1_n}_{self.warps_mma_n}"

@@ -54,3 +54,4 @@ export PYTHONPATH=$PYTHONPATH:/path/to/attention_autotuner/python
 - retnet parallel scan template
 - retnet bwd load_q_once,causal
 - the performance of python interface?
+- retnet backward num_stage_qk=2 bug

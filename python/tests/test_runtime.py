@@ -66,6 +66,9 @@ test_dict_list = [
     },
     "bwd_configs":{
         RetBwdConfig(Br=64, Bc=64, Kd=256, D=256, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4),
+        # result not correct
+        # RetBwdConfig(Br=64, Bc=64, Kd=256, D=256, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4,BlockKSmem=64,num_stages_qk=2),
+        RetBwdConfig(Br=64, Bc=64, Kd=256, D=256, mmawarpsN=2, mmawarpsN_dk=2, mmawarpsN_dv=2, mmawarpsN_dq=2,Nthreads=128),
     },
     },
     {

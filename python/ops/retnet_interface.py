@@ -50,6 +50,7 @@ class RetNetAttn(torch.autograd.Function):
 
         cc = RetBwdTunner(arch=device_type, torch_array=[q, k, v, mask, do, r, dq, dk, dv, dq_accum]).tune(log_path="../../logs/")
         # cc = RetBwdConfig(Br=64, Bc=64, Kd=key_dim, D=head_dim, mmawarpsN=2, mmawarpsN_dk=4, mmawarpsN_dv=4, mmawarpsN_dq=4)
+        dq_accum.zero_()
         Runtime(device_type,cc , tmp_dir="../../tmp/ret_bwd").apply([q, k, v, mask, do, r, dq, dk, dv, dq_accum])
         return dq, dk, dv, None, None
 
