@@ -191,6 +191,7 @@ int main(){
     float ms;
     ms = test_retnet_bwd<InpleConfig>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
+    // on A100
     // num_stage_qk 2, illegal memory access, Idk why
     // ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,128,128,128,1,2,2,2,32,2>>(PS);
     // std::cout << "Time: " << ms << "ms" << std::endl;
@@ -202,6 +203,8 @@ int main(){
     // std::cout << "Time: " << ms << "ms" << std::endl;
     ms = test_retnet_bwd<ImplementShapeRetBwd<128,64,128,128,128,1,2,2,2>>(PS);
     std::cout << "Time: " << ms << "ms" << std::endl;
+
+    // on RTX4090
 
 
     return 0;
