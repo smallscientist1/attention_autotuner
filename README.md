@@ -1,8 +1,86 @@
 # attention_autotuner
 an autotuner for attention
 
-## attention algo
-### flash attention
+## Introduction
+
+This project provide an autotuner for the flash version of attention and retnet. Users can use it as an pytorch func.
+
+```python
+# Attention on A100
+from ops.attention_interface import flash_attn_func
+import torch
+from arch import A100
+
+device_type = A100()
+dtype = torch.float16
+device = torch.device("cuda")
+
+q = torch.randn(batch, heads, seqlen_q, dim_qk, device=device, dtype=dtype)
+k = torch.randn(batch, heads, seqlen_kv, dim_qk, device=device, dtype=dtype)
+v = torch.randn(batch, heads, seqlen_kv, dim_v, device=device, dtype=dtype)
+
+o = flash_attn_func(q,k,v,device_type)
+    
+```
+
+```python
+# retnet on RTX4090
+from ops.retnet_interface import RetNetAttnFunc
+import torch
+
+device_type = RTX4090()
+dtype = torch.float16
+device = torch.device("cuda")
+
+q = torch.randn(batch, heads, seqlen_q, dim_qk, device=device, dtype=dtype)
+k = torch.randn(batch, heads, seqlen_kv, dim_qk, device=device, dtype=dtype)
+v = torch.randn(batch, heads, seqlen_kv, dim_v, device=device, dtype=dtype)
+mask = torch.randn(heads, seqlen_q, seqlen_kv, device=device, dtype=dtype)
+
+o = RetNetAttnFunc(q, k, v, mask, device_type)
+
+do = torch.randn(batch, heads, seqlen_q, dim_v, device=device, dtype=dtype)
+o.backward(do)
+
+```
+
+
+## Installation
+
+### Requirements
+- cuda 12.3
+- cmake 3.24
+
+### To install
+
+- clone this repo and its submodule [cutlass](https://github.com/NVIDIA/cutlass.git)
+```
+git clone --recursive https://github.com/smallscientist1/attention_autotuner.git
+```
+- add to PYTHONPATH
+```
+export PYTHONPATH=$PYTHONPATH:/path/to/attention_autotuner/python
+```
+
+## Benchmark
+
+- build the C++ benchmark on nvidia Ampere GPU(e.g. A100)
+```
+cd benchmarks
+mkdir build
+cd build
+cmake -DPROJECT_CUDA_ARCH="80" ..
+```
+
+## Performance
+
+
+
+## Appendix
+
+### attention algo
+
+#### flash attention
 - q @ k
 - reduce_max(qk)
 - scale = exp(m_old-m_new)
@@ -11,7 +89,7 @@ an autotuner for attention
 - accs * exp(accs-m_new)
 - lse = reduce_sum(accs)
 
-### retnet parallel
+#### retnet parallel
 - q @ k
 - qk * mask
 - reduce_abs(qk)
@@ -20,27 +98,6 @@ an autotuner for attention
 - acco * scale
 - accs / r_new
 
-## dependencies
-- cuda 12.3
-- cmake 3.24
-- nsight compute 
-
-## build
-- clone the repo and submodule
-```
-git clone --recursive https://github.com/smallscientist1/attention_autotuner.git
-```
-- build the benchmark on nvidia Ampere GPU(e.g. A100)
-```
-cd benchmarks
-mkdir build
-cd build
-cmake -DPROJECT_CUDA_ARCH="80" ..
-```
-- add to PYTHONPATH
-```
-export PYTHONPATH=$PYTHONPATH:/path/to/attention_autotuner/python
-```
 
 ## TODO
 - chunkwise retnet
