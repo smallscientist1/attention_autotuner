@@ -1,9 +1,9 @@
 # attention_autotuner
-an autotuner for attention
+An autotuner for the flash version of **attention** and **retnet**
 
 ## Introduction
 
-This project provide an autotuner for the flash version of attention and retnet. Users can use it as an pytorch func.
+This project provide an autotuner for the flash version of **attention** and **retnet**. Users can use it as an pytorch func.
 
 ```python
 # Attention on A100
