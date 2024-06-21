@@ -112,3 +112,4 @@ cmake -DPROJECT_CUDA_ARCH="80" ..
 - retnet bwd load_q_once,causal
 - the performance of python interface?
 - retnet backward num_stage_qk=2 bug
+- retnet fwd regfuse d=192 bug
