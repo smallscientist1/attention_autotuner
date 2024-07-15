@@ -15,7 +15,7 @@ template是kernel实现的一个模版，包含一些可变的参数，例如til
 
 ## template implement
 
-首先在实现template时，需要考虑每个并行block到数据的映射和block内每个warp到数据的映射。对算法进行实现。
+首先在实现template时，需要考虑每个并行block到数据的映射和block内每个warp到数据的映射，并且使用最高效的硬件指令(例如A100上的cp.async,ldmatrix,hmma)。对算法进行实现。
 
 ### block layout
 首先在block间，需要确定数据的tile，以及block访问数据tile的顺序。
