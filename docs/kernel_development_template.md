@@ -37,7 +37,7 @@ void* blockptr = ptr + blockoffset;
 
 ## template optimize&expand
 
-在对朴素的template进行分析和借助`ncu` profile后, 得到template的问题，可以进行pipeline, datalayout优化，loop unroll等方面等优化。
+在对朴素的template进行分析和借助`ncu` profile后, 得到template的问题，可以进行pipeline, data layout，loop unroll等方面等优化。并且可以实现多个可能达到最优性能的kernel template。
 
 ### pipeline
 
